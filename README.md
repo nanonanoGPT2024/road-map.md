@@ -32,4 +32,18 @@ Panduan komprehensif implementasi dan operasional personal AI agent otonom:
 - **BAB 08**: [Multi-Agent Orchestration & Deployment 24/7 di VPS](./OpenClaw/BAB-08-Multi-Agent-dan-Deployment/)
 - **🏆 CAPSTONE PROJECT**: [Autonomous 24/7 Personal Operations Agent](./OpenClaw/CAPSTONE-PROJECT-Autonomous-Personal-Operations-Agent.md)
 
+### 🚀 [DevOps & Site Reliability Engineering (SRE) Mastery](./DevOps/README.md)
+Panduan komprehensif otomatisasi infrastruktur, containerisasi, orkestrasi K8s, GitOps, dan observabilitas:
+- **BAB 01**: [Fondasi Sistem Operasi & Linux Shell Automation](./DevOps/BAB-01-Sistem-Operasi-dan-Linux-Automation/)
+- **BAB 02**: [Jaringan, Protokol Internet, & Web Servers](./DevOps/BAB-02-Jaringan-Protokol-dan-Web-Servers/)
+- **BAB 03**: [Containerization dengan Docker Modern](./DevOps/BAB-03-Containerization-Docker/)
+- **BAB 04**: [Orkestrasi Container dengan Kubernetes (K8s)](./DevOps/BAB-04-Kubernetes-Orchestration/)
+- **BAB 05**: [Infrastructure as Code (IaC) dengan Terraform & OpenTofu](./DevOps/BAB-05-Infrastructure-as-Code-Terraform/)
+- **BAB 06**: [Configuration Management & Server Provisioning (Ansible)](./DevOps/BAB-06-Configuration-Management-Ansible/)
+- **BAB 07**: [Continuous Integration & Continuous Delivery (CI/CD)](./DevOps/BAB-07-CICD-dan-GitOps/)
+- **BAB 08**: [Observabilitas Sistem: Metrik, Logging, & Tracing](./DevOps/BAB-08-Observabilitas-Monitoring-Logging/)
+- **BAB 09**: [DevSecOps, Secret Management, & Governance](./DevOps/BAB-09-DevSecOps-dan-Security/)
+- **BAB 10**: [Reliability Engineering (SRE), Incident Response, & Cloud Cost (FinOps)](./DevOps/BAB-10-SRE-Incident-dan-FinOps/)
+- **🏆 CAPSTONE PROJECT**: [Enterprise Multi-Cloud GitOps Delivery Platform](./DevOps/CAPSTONE-PROJECT-Enterprise-GitOps-Platform.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
