@@ -60,4 +60,19 @@ Panduan mendalam arsitektur kontainerisasi modern, BuildKit, keamanan, dan deplo
 - **BAB 10**: [Production Deployment & Container Registries (Harbor, Systemd, Prune)](./Docker/BAB-10-Production-Deployment-dan-Container-Registries/)
 - **🏆 CAPSTONE PROJECT**: [Hardened Enterprise Microservices Infrastructure](./Docker/CAPSTONE-PROJECT-Production-Grade-Microservices-Docker.md)
 
+### ☸️ [Kubernetes Mastery: Architecture, Security, Scheduling, & GitOps](./Kubernetes/README.md)
+Panduan komprehensif orkestrasi kontainer skala enterprise, arsitektur internal, keamanan, dan GitOps:
+- **BAB 01**: [Arsitektur Internal & Control Plane Deep Dive](./Kubernetes/BAB-01-Arsitektur-Internal-dan-Control-Plane/)
+- **BAB 02**: [Primitif Komputasi: Pod, Lifecycle, & Multi-Container Patterns](./Kubernetes/BAB-02-Pod-Lifecycle-dan-Multi-Container-Patterns/)
+- **BAB 03**: [Workload Controllers: Deployments, StatefulSets, & DaemonSets](./Kubernetes/BAB-03-Workload-Controllers/)
+- **BAB 04**: [Konfigurasi, Secrets, & Decoupled Architecture](./Kubernetes/BAB-04-Konfigurasi-Secrets-dan-Decoupled-Architecture/)
+- **BAB 05**: [Networking, Service Discovery, & Ingress Gateway](./Kubernetes/BAB-05-Networking-Service-Discovery-dan-Ingress/)
+- **BAB 06**: [Network Security & Isolation: CNI & NetworkPolicies](./Kubernetes/BAB-06-Network-Security-CNI-dan-NetworkPolicies/)
+- **BAB 07**: [Storage, Persistence, & Container Storage Interface (CSI)](./Kubernetes/BAB-07-Storage-Persistence-dan-CSI/)
+- **BAB 08**: [Keamanan Cluster: RBAC, ServiceAccounts, & Admission Controllers](./Kubernetes/BAB-08-Keamanan-Cluster-RBAC-dan-Admission-Controllers/)
+- **BAB 09**: [Scheduling Lanjutan & Autoscaling (HPA, VPA, Karpenter)](./Kubernetes/BAB-09-Scheduling-Lanjutan-dan-Autoscaling/)
+- **BAB 10**: [Packaging (Helm/Kustomize), GitOps (ArgoCD), & Troubleshooting](./Kubernetes/BAB-10-Packaging-GitOps-dan-Troubleshooting/)
+- **🏆 CAPSTONE PROJECT**: [Enterprise Multi-Tenant Microservices Platform on Kubernetes](./Kubernetes/CAPSTONE-PROJECT-Enterprise-MultiTenant-Microservices-K8s.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
+
