@@ -74,5 +74,19 @@ Panduan komprehensif orkestrasi kontainer skala enterprise, arsitektur internal,
 - **BAB 10**: [Packaging (Helm/Kustomize), GitOps (ArgoCD), & Troubleshooting](./Kubernetes/BAB-10-Packaging-GitOps-dan-Troubleshooting/)
 - **🏆 CAPSTONE PROJECT**: [Enterprise Multi-Tenant Microservices Platform on Kubernetes](./Kubernetes/CAPSTONE-PROJECT-Enterprise-MultiTenant-Microservices-K8s.md)
 
+### 🌐 [Backend Developer Mastery: Protocol, Runtime, Distributed Storage, & Architecture](./Backend/README.md)
+Panduan arsitektur backend komprehensif, desain API, database relasional/NoSQL, caching, streaming, keamanan, dan transaksi terdistribusi:
+- **BAB 01**: [Fondasi Internet, HTTP/2/3, WebSockets, & DNS](./Backend/BAB-01-Fondasi-Internet-dan-Protokol/)
+- **BAB 02**: [Bahasa Pemrograman, Concurrency Models, & Profiling](./Backend/BAB-02-Bahasa-Pemrograman-dan-Runtime-Execution/)
+- **BAB 03**: [Arsitektur API: RESTful, GraphQL, & gRPC](./Backend/BAB-03-Arsitektur-API-REST-GraphQL-gRPC/)
+- **BAB 04**: [Basis Data Relasional (RDBMS), ACID, & Indexing](./Backend/BAB-04-RDBMS-dan-SQL-Mastery/)
+- **BAB 05**: [Basis Data NoSQL, Consistent Hashing, & Vector Search](./Backend/BAB-05-Basis-Data-NoSQL-dan-NewSQL/)
+- **BAB 06**: [Strategi Caching, Redis Internals, & Distributed Locks](./Backend/BAB-06-Strategi-Caching-dan-In-Memory-Stores/)
+- **BAB 07**: [Asynchronous Processing, Kafka, & Transactional Outbox](./Backend/BAB-07-Asynchronous-Processing-dan-Message-Brokers/)
+- **BAB 08**: [Autentikasi, Otorisasi (OAuth 2.0 PKCE), & OWASP Security](./Backend/BAB-08-Autentikasi-Otorisasi-dan-Keamanan-Backend/)
+- **BAB 09**: [Pengujian Backend (Testcontainers, Pact), & CI/CD](./Backend/BAB-09-Pengujian-Backend-Kualitas-Kode-dan-CICD/)
+- **BAB 10**: [Arsitektur Lanjutan, Domain-Driven Design (DDD), & Saga Pattern](./Backend/BAB-10-Arsitektur-Backend-Lanjutan-dan-Skalabilitas-Sistem/)
+- **🏆 CAPSTONE PROJECT**: [PayPulse Enterprise Omnichannel Payment & Ledger Gateway](./Backend/CAPSTONE-PROJECT-Enterprise-Omnichannel-Payment-Backend.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
 
