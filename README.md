@@ -46,4 +46,18 @@ Panduan komprehensif otomatisasi infrastruktur, containerisasi, orkestrasi K8s, 
 - **BAB 10**: [Reliability Engineering (SRE), Incident Response, & Cloud Cost (FinOps)](./DevOps/BAB-10-SRE-Incident-dan-FinOps/)
 - **🏆 CAPSTONE PROJECT**: [Enterprise Multi-Cloud GitOps Delivery Platform](./DevOps/CAPSTONE-PROJECT-Enterprise-GitOps-Platform.md)
 
+### 🐳 [Docker Mastery: From Container Basics to Production Architecture](./Docker/README.md)
+Panduan mendalam arsitektur kontainerisasi modern, BuildKit, keamanan, dan deployment produksi:
+- **BAB 01**: [Fondasi & Arsitektur Docker (Namespaces, Cgroups, OCI, containerd)](./Docker/BAB-01-Fondasi-dan-Arsitektur-Docker/)
+- **BAB 02**: [Container Lifecycle & CLI Mastery](./Docker/BAB-02-Container-Lifecycle-dan-CLI-Mastery/)
+- **BAB 03**: [Dockerfile Engineering & Image Optimization (Multi-Stage, Distroless)](./Docker/BAB-03-Dockerfile-Engineering-dan-Image-Optimization/)
+- **BAB 04**: [Docker Storage, Volumes, & Persistence](./Docker/BAB-04-Docker-Storage-Volumes-dan-Persistence/)
+- **BAB 05**: [Docker Networking Deep Dive & DNS](./Docker/BAB-05-Docker-Networking-Deep-Dive/)
+- **BAB 06**: [Multi-Container dengan Docker Compose V2](./Docker/BAB-06-Multi-Container-dengan-Docker-Compose/)
+- **BAB 07**: [Security Hardening, Non-Root, & Rootless Docker](./Docker/BAB-07-Docker-Security-Hardening-dan-Rootless/)
+- **BAB 08**: [Advanced BuildKit & Multi-Architecture (Buildx, AMD64/ARM64)](./Docker/BAB-08-Advanced-BuildKit-dan-Multi-Architecture/)
+- **BAB 09**: [Logging, Monitoring, & Troubleshooting (cAdvisor, OOM-Killer)](./Docker/BAB-09-Logging-Monitoring-dan-Troubleshooting/)
+- **BAB 10**: [Production Deployment & Container Registries (Harbor, Systemd, Prune)](./Docker/BAB-10-Production-Deployment-dan-Container-Registries/)
+- **🏆 CAPSTONE PROJECT**: [Hardened Enterprise Microservices Infrastructure](./Docker/CAPSTONE-PROJECT-Production-Grade-Microservices-Docker.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
