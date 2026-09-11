@@ -88,5 +88,19 @@ Panduan arsitektur backend komprehensif, desain API, database relasional/NoSQL, 
 - **BAB 10**: [Arsitektur Lanjutan, Domain-Driven Design (DDD), & Saga Pattern](./Backend/BAB-10-Arsitektur-Backend-Lanjutan-dan-Skalabilitas-Sistem/)
 - **🏆 CAPSTONE PROJECT**: [PayPulse Enterprise Omnichannel Payment & Ledger Gateway](./Backend/CAPSTONE-PROJECT-Enterprise-Omnichannel-Payment-Backend.md)
 
+### ⚡ [Full-Stack Developer Mastery: Modern Web Architecture, Edge Computing, & Next.js](./Full-Stack/README.md)
+Kurikulum lengkap arsitektur full-stack modern, React internals, Next.js App Router, End-to-End Type Safety (tRPC & Zod), Serverless Databases, WebAuthn Passkeys, Real-Time WebSockets, OWASP Defensive Security, Playwright E2E, dan Turborepo:
+- **BAB 01**: [Arsitektur Full-Stack Modern, Web Standards, & DOM/CSS Internals](./Full-Stack/BAB-01-Arsitektur-Full-Stack-dan-Browser-Internals/)
+- **BAB 02**: [Modern Frontend Engineering: React Internals, Virtual DOM, & State Management](./Full-Stack/BAB-02-React-Internals-dan-State-Management/)
+- **BAB 03**: [Full-Stack Frameworks & Meta-Frameworks (Next.js App Router)](./Full-Stack/BAB-03-Meta-Frameworks-Nextjs-App-Router/)
+- **BAB 04**: [End-to-End Type Safety: TypeScript Mastery & Schema Validation (tRPC & Zod)](./Full-Stack/BAB-04-End-to-End-Type-Safety-TypeScript-tRPC/)
+- **BAB 05**: [Full-Stack Data Layer: ORMs, Migrasi, & Caching Gateway (Drizzle, Neon, Upstash)](./Full-Stack/BAB-05-Data-Layer-ORMs-dan-Serverless-Databases/)
+- **BAB 06**: [Autentikasi & Sesi Full-Stack: Auth.js, Passkeys (WebAuthn), & MFA](./Full-Stack/BAB-06-Autentikasi-Full-Stack-dan-WebAuthn/)
+- **BAB 07**: [Real-Time Systems, WebSockets, & PWA Offline-First](./Full-Stack/BAB-07-Real-Time-WebSockets-dan-PWA-Offline/)
+- **BAB 08**: [Keamanan Full-Stack Defensif (OWASP Web & API Top 10, CSP Nonces, SSRF)](./Full-Stack/BAB-08-Keamanan-Full-Stack-Defensif-OWASP/)
+- **BAB 09**: [Pengujian Full-Stack (Playwright E2E), Observabilitas (OpenTelemetry), & Core Web Vitals](./Full-Stack/BAB-09-Testing-E2E-Playwright-dan-Observabilitas/)
+- **BAB 10**: [Serverless, Edge Infrastructure (V8 Isolates), Monorepo (Turborepo), & GitOps](./Full-Stack/BAB-10-Serverless-Edge-Infrastructure-dan-Monorepo/)
+- **🏆 CAPSTONE PROJECT**: [SyncSpace: Enterprise Collaborative Workspace & SaaS Platform](./Full-Stack/CAPSTONE-PROJECT-Enterprise-Collaborative-Workspace-SaaS.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
 
