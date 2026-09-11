@@ -102,5 +102,19 @@ Kurikulum lengkap arsitektur full-stack modern, React internals, Next.js App Rou
 - **BAB 10**: [Serverless, Edge Infrastructure (V8 Isolates), Monorepo (Turborepo), & GitOps](./Full-Stack/BAB-10-Serverless-Edge-Infrastructure-dan-Monorepo/)
 - **🏆 CAPSTONE PROJECT**: [SyncSpace: Enterprise Collaborative Workspace & SaaS Platform](./Full-Stack/CAPSTONE-PROJECT-Enterprise-Collaborative-Workspace-SaaS.md)
 
+### 🎯 [QA Engineer Mastery: Automated Testing, Quality Engineering, & CI/CD Gates](./QA/README.md)
+Kurikulum lengkap rekayasa kualitas perangkat lunak modern, STLC, teknik pengujian black-box & white-box, otomasi API, Playwright modern web UI, database & TDM, k6 load testing, BDD Gherkin, Mobile Appium, serta mitigasi flaky tests & quality gates di CI/CD:
+- **BAB 01**: [Fondasi Software Testing, Kualitas Perangkat Lunak, & STLC](./QA/BAB-01-Fondasi-Software-Testing-dan-STLC/)
+- **BAB 02**: [Tingkatan & Tipe Pengujian (Functional vs Non-Functional)](./QA/BAB-02-Tingkatan-dan-Tipe-Pengujian/)
+- **BAB 03**: [Teknik Perancangan Test Case (Black-Box & White-Box)](./QA/BAB-03-Teknik-Perancangan-Test-Case-Black-Box-White-Box/)
+- **BAB 04**: [Pengujian API & Validasi Kontrak Data (API Testing)](./QA/BAB-04-Pengujian-API-dan-Validasi-Kontrak/)
+- **BAB 05**: [Fondasi Otomasi Pengujian & Pemrograman untuk QA](./QA/BAB-05-Fondasi-Otomasi-Pengujian-dan-Pemrograman/)
+- **BAB 06**: [Otomasi Pengujian Web UI Modern (Playwright & Cypress)](./QA/BAB-06-Otomasi-Pengujian-Web-UI-Modern/)
+- **BAB 07**: [Pengujian Database, Integritas Data, & Test Data Management (TDM)](./QA/BAB-07-Pengujian-Database-dan-Test-Data-Management/)
+- **BAB 08**: [Pengujian Performa & Beban Sistem (Performance & Load Testing)](./QA/BAB-08-Pengujian-Performa-dan-Beban-Sistem/)
+- **BAB 09**: [Pengujian Berbasis Perilaku (BDD), Mobile Testing, & Aksesibilitas](./QA/BAB-09-Pengujian-Berbasis-Perilaku-BDD-dan-Mobile/)
+- **BAB 10**: [CI/CD Integration, Flaky Test Management, & Quality Gates](./QA/BAB-10-CICD-Integration-Flaky-Test-dan-Quality-Gates/)
+- **🏆 CAPSTONE PROJECT**: [Enterprise Omnichannel Quality Engineering Suite](./QA/CAPSTONE-PROJECT-Enterprise-Omnichannel-Quality-Engineering.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
 
