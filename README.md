@@ -116,5 +116,61 @@ Kurikulum lengkap rekayasa kualitas perangkat lunak modern, STLC, teknik penguji
 - **BAB 10**: [CI/CD Integration, Flaky Test Management, & Quality Gates](./QA/BAB-10-CICD-Integration-Flaky-Test-dan-Quality-Gates/)
 - **🏆 CAPSTONE PROJECT**: [Enterprise Omnichannel Quality Engineering Suite](./QA/CAPSTONE-PROJECT-Enterprise-Omnichannel-Quality-Engineering.md)
 
+### 🎨 [Frontend & TypeScript Mastery: Modern Web Standards, Framework Internals, State Engines, & High-Performance UI](./Frontend/README.md)
+Kurikulum arsitektur frontend tingkat tinggi, browser rendering internals, modern TypeScript strict type system, state management atomik & reaktif, performance profiling (Core Web Vitals), security defensif, dan micro-frontend:
+- **BAB 01**: [Fondasi Web Platform, DOM Rendering, & Modern TypeScript Core](./Frontend/BAB-01-Web-Platform-Internals-dan-TypeScript-Core/)
+- **BAB 02**: [Advanced TypeScript: Generics, Type Narrowing, Template Literal Types, & AST](./Frontend/BAB-02-TypeScript-Type-System-Internals/)
+- **BAB 03**: [Modern Component Architecture & State Management Internals](./Frontend/BAB-03-Component-Architecture-dan-State-Engines/)
+- **BAB 04**: [CSS Engineering at Scale: CSS Modules, Tailwind, Container Queries, & Design Tokens](./Frontend/BAB-04-Styling-Systems-dan-CSS-Architecture/)
+- **BAB 05**: [Client-Side Routing, Data Fetching, & Caching Strategies](./Frontend/BAB-05-Routing-Data-Fetching-dan-Caching/)
+- **BAB 06**: [Web Performance & Core Web Vitals (LCP, INP, CLS, Virtualization)](./Frontend/BAB-06-Performance-Engineering-dan-Core-Web-Vitals/)
+- **BAB 07**: [Web Security: XSS Mitigation, CSP Nonces, CORS, & Secure Storage](./Frontend/BAB-07-Frontend-Security-dan-Defensive-Web/)
+- **BAB 08**: [Frontend Testing Strategy: Unit, Component, & Visual Regression](./Frontend/BAB-08-Testing-Strategy-dan-Quality-Gates/)
+- **BAB 09**: [Progressive Web Apps (PWA), Service Workers, & Web Workers](./Frontend/BAB-09-PWA-Service-Workers-dan-Offline-First/)
+- **BAB 10**: [Build Systems, Bundlers Internals (Vite/Rollup), & Micro-Frontend Architecture](./Frontend/BAB-10-Build-Systems-dan-Micro-Frontends/)
+- **🏆 CAPSTONE PROJECT**: [NusantaraUI: Enterprise Design System & Micro-Frontend Platform](./Frontend/CAPSTONE-PROJECT-Enterprise-Design-System-and-Micro-Frontend.md)
+
+### 🐘 [PostgreSQL Mastery: Relational Theory, Internals, Query Optimization, & High Availability Clustering](./PostgreSQL/README.md)
+Kurikulum mendalam database engineering PostgreSQL, storage layout, MVCC, query planner, index tuning, locking, replication, dan clustering enterprise:
+- **BAB 01**: [Arsitektur Internal PostgreSQL, Proses Engine, & Memory Management](./PostgreSQL/BAB-01-Arsitektur-Internal-PostgreSQL/)
+- **BAB 02**: [SQL Mastery Lanjutan: Window Functions, CTEs, Recursive Queries, & JSONB](./PostgreSQL/BAB-02-Advanced-SQL-Window-Functions-dan-JSONB/)
+- **BAB 03**: [Relational Modeling, Normalization, Table Partitioning, & Constraints](./PostgreSQL/BAB-03-Relational-Modeling-dan-Table-Partitioning/)
+- **BAB 04**: [Storage Internals, 8KB Pages, Free Space Map, MVCC, & Vacuuming](./PostgreSQL/BAB-04-Storage-Internals-MVCC-dan-Vacuuming/)
+- **BAB 05**: [Indexing Deep Dive: B-Tree, GIN, GiST, BRIN, & Partial Indexes](./PostgreSQL/BAB-05-Indexing-Deep-Dive-BTree-GIN-GiST-BRIN/)
+- **BAB 06**: [Query Optimization, EXPLAIN ANALYZE, & Statistics Engine](./PostgreSQL/BAB-06-Query-Optimization-dan-EXPLAIN-ANALYZE/)
+- **BAB 07**: [Concurrency Control, Isolation Levels, Deadlocks, & Advisory Locks](./PostgreSQL/BAB-07-Concurrency-Control-Isolation-Levels-Locks/)
+- **BAB 08**: [Write-Ahead Logging (WAL), Checkpoints, & Point-In-Time Recovery (PITR)](./PostgreSQL/BAB-08-WAL-Checkpoints-dan-PITR/)
+- **BAB 09**: [High Availability, Streaming Replication, Connection Pooling (PgBouncer), & Patroni](./PostgreSQL/BAB-09-High-Availability-Replication-dan-Patroni/)
+- **BAB 10**: [PostgreSQL Security (RLS, RBAC, SSL), Observabilitas (pg_stat_statements), & Extensions (pgvector)](./PostgreSQL/BAB-10-Security-Observability-dan-Extensions/)
+- **🏆 CAPSTONE PROJECT**: [NusantaraDB: Enterprise High-Availability PostgreSQL Cluster & Analytical Engine](./PostgreSQL/CAPSTONE-PROJECT-Enterprise-Distributed-Database-Cluster.md)
+
+### 🧠 [AI Engineer Mastery: LLM Internals, Prompt Engineering, RAG Systems, & Autonomous Multi-Agent Workflows](./AI-Engineer/README.md)
+Kurikulum rekayasa kecerdasan buatan terapan modern, transformer internals, structured output, vector search, Advanced RAG, multi-agent frameworks, dan fine-tuning/serving:
+- **BAB 01**: [Fondasi LLM, Tokenization, Transformers, & Prompt Engineering Patterns](./AI-Engineer/BAB-01-Fondasi-LLM-Transformer-dan-Prompt-Engineering/)
+- **BAB 02**: [API Integration, Structured Outputs, Function Calling, & Model Routing](./AI-Engineer/BAB-02-API-Integration-Function-Calling-dan-Routing/)
+- **BAB 03**: [Embeddings, Vector Representations, & Similarity Metrics](./AI-Engineer/BAB-03-Embeddings-dan-Vector-Representations/)
+- **BAB 04**: [Vector Databases Internals & Indexing (HNSW, IVFFlat, Chroma, Qdrant)](./AI-Engineer/BAB-04-Vector-Databases-Internals-dan-HNSW/)
+- **BAB 05**: [Advanced Retrieval-Augmented Generation (RAG): Chunking, Hybrid Search, & Re-ranking](./AI-Engineer/BAB-05-Advanced-RAG-Hybrid-Search-dan-Reranking/)
+- **BAB 06**: [Context Window Management, Long-Context Handling, & Semantic Caching](./AI-Engineer/BAB-06-Context-Window-Management-dan-Semantic-Caching/)
+- **BAB 07**: [Autonomous AI Agents: ReAct, Tool Use, Planning, & Memory Systems](./AI-Engineer/BAB-07-Autonomous-AI-Agents-ReAct-dan-Memory/)
+- **BAB 08**: [Multi-Agent Orchestration & Frameworks (LangGraph, AutoGen, CrewAI)](./AI-Engineer/BAB-08-Multi-Agent-Orchestration-dan-LangGraph/)
+- **BAB 09**: [Model Evaluation, LLM Benchmarking, Guardrails, & Safety/Red-Teaming](./AI-Engineer/BAB-09-Model-Evaluation-Guardrails-dan-Safety/)
+- **BAB 10**: [Fine-Tuning (LoRA/QLoRA), Quantization (GGUF/AWQ), & Local LLM Serving (vLLM)](./AI-Engineer/BAB-10-Fine-Tuning-Quantization-dan-vLLM/)
+- **🏆 CAPSTONE PROJECT**: [NusantaraAgent: Autonomous Multi-Agent Enterprise Research & Operations Platform](./AI-Engineer/CAPSTONE-PROJECT-Enterprise-Autonomous-Knowledge-Agent.md)
+
+### 🐹 [Golang Mastery: Concurrent Systems, Memory Model, Profiling, & Cloud-Native Microservices](./Golang/README.md)
+Kurikulum sistem backend dan cloud-native Go tingkat tinggi, runtime model, memory allocation, goroutines & channels, garbage collection tricolor, network programming, profiling, dan resilience:
+- **BAB 01**: [Fondasi Sintaks Go, Type System, Memory Allocation (Stack vs Heap), & Pointer Semantics](./Golang/BAB-01-Fondasi-Sintaks-Type-System-Memory-Allocation/)
+- **BAB 02**: [Concurrency Primitives: Goroutines, Channels, Select, & Memory Model](./Golang/BAB-02-Concurrency-Primitives-Goroutines-Channels/)
+- **BAB 03**: [Synchronization Patterns: Mutex, RWMutex, WaitGroup, Atomic, & Concurrency Hazards](./Golang/BAB-03-Synchronization-Patterns-dan-Data-Race-Mitigation/)
+- **BAB 04**: [Advanced Interfaces, Reflection, Generics, & Idiomatic Architecture](./Golang/BAB-04-Advanced-Interfaces-Reflection-dan-Generics/)
+- **BAB 05**: [Go Memory Management: Garbage Collection (Tricolor Mark-Sweep), Pointers, & Escape Analysis](./Golang/BAB-05-Memory-Management-GC-dan-Escape-Analysis/)
+- **BAB 06**: [Network Programming & High-Performance HTTP/gRPC Services](./Golang/BAB-06-Network-Programming-HTTP-dan-gRPC/)
+- **BAB 07**: [Database Engineering in Go: database/sql, Connection Pooling, & Transactions](./Golang/BAB-07-Database-Engineering-dan-Connection-Pooling/)
+- **BAB 08**: [Testing, Benchmarking, Fuzzing, & Profiling (pprof, trace)](./Golang/BAB-08-Testing-Benchmarking-Fuzzing-dan-pprof/)
+- **BAB 09**: [Resiliency Patterns: Context Propagation, Rate Limiting, Circuit Breaker, & Graceful Shutdown](./Golang/BAB-09-Resiliency-Patterns-Context-dan-Graceful-Shutdown/)
+- **BAB 10**: [Cloud-Native Go: Containerization, CLI Tooling (Cobra), Observability, & Microservices](./Golang/BAB-10-Cloud-Native-Go-CLI-dan-Microservices/)
+- **🏆 CAPSTONE PROJECT**: [NusantaraStream Go: High-Throughput Distributed Event Streaming Engine](./Golang/CAPSTONE-PROJECT-High-Throughput-Distributed-Event-Engine.md)
+
 Setiap bab dilengkapi dengan file materi Markdown, script laboratorium interaktif di folder `hands-on/`, serta evaluasi kuis dan challenge.
 
