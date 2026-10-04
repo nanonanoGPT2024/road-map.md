@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infrastruktur Logistik Global | Enterprise Engine</title>
+
+  <!-- 1. Resource Hints: Koneksi Awal CDN Pihak Ketiga -->
+  <link rel="dns-prefetch" href="https://assets.cdn-supplier.com">
+  <link rel="preconnect" href="https://assets.cdn-supplier.com" crossorigin>
+
+  <!-- 2. Preload Hero Image LCP Secara Deklaratif Menggunakan Source Set -->
+  <link 
+    rel="preload" 
+    as="image" 
+    type="image/avif" 
+    href="https://assets.cdn-supplier.com/hero-1280.avif"
+    imagesrcset="https://assets.cdn-supplier.com/hero-640.avif 640w,
+                 https://assets.cdn-supplier.com/hero-1280.avif 1280w,
+                 https://assets.cdn-supplier.com/hero-1920.avif 1920w"
+    imagesizes="(max-width: 768px) 100vw, 1200px"
+    fetchpriority="high"
+  >
+
+  <style>
+    /* Mengamankan kestabilan CLS dan implementasi Fluid CSS */
+    .hero-container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .responsive-media {
+      width: 100%;
+      height: auto;
+      display: block;
+      /* Mencegah reflow layout */
+      aspect-ratio: 16 / 9;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Pusat Distribusi Global</h1>
+  </header>
+
+  <main>
+    <section class="hero-container">
+      <!-- Media Responsif Resolusi Tinggi (LCP Candidate) -->
+      <picture>
+        <source 
+          type="image/avif"
+          srcset="https://assets.cdn-supplier.com/hero-640.avif 640w,
+                  https://assets.cdn-supplier.com/hero-1280.avif 1280w,
+                  https://assets.cdn-supplier.com/hero-1920.avif 1920w"
+          sizes="(max-width: 768px) 100vw, 1200px"
+        />
+        <source 
+          type="image/webp"
+          srcset="https://assets.cdn-supplier.com/hero-640.webp 640w,
+                  https://assets.cdn-supplier.com/hero-1280.webp 1280w,
+                  https://assets.cdn-supplier.com/hero-1920.webp 1920w"
+          sizes="(max-width: 768px) 100vw, 1200px"
+        />
+        <img 
+          src="https://assets.cdn-supplier.com/hero-1280.jpg" 
+          srcset="https://assets.cdn-supplier.com/hero-640.jpg 640w,
+                  https://assets.cdn-supplier.com/hero-1280.jpg 1280w,
+                  https://assets.cdn-supplier.com/hero-1920.jpg 1920w"
+          sizes="(max-width: 768px) 100vw, 1200px"
+          alt="Visualisasi Jaringan Pengiriman Lintas Benua" 
+          width="1920" 
+          height="1080" 
+          class="responsive-media"
+          loading="eager" 
+          fetchpriority="high" 
+          decoding="async"
+        />
+      </picture>
+    </section>
+
+    <!-- Media Non-Kritis / Below-the-fold (Lazy Loaded Video dan Poster) -->
+    <section class="hero-container" style="margin-top: 4rem;">
+      <video 
+        class="responsive-media" 
+        width="1920" 
+        height="1080" 
+        controls 
+        preload="none" 
+        poster="https://assets.cdn-supplier.com/video-poster-1280.webp"
+      >
+        <source src="https://assets.cdn-supplier.com/promo-logistics.mp4" type="video/mp4; codecs='avc1.4D401F, mp4a.40.2'">
+        <track kind="captions" src="/captions/promo-id.vtt" srclang="id" label="Bahasa Indonesia" default>
+        Browser Anda tidak mendukung reproduksi video HTML5 native.
+      </video>
+    </section>
+  </main>
+
+</body>
+</html>

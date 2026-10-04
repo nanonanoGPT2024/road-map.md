@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Compositor & View Transitions</title>
+  <style>
+    /* ====================================================================
+       1. SYSTEM ARCHITECTURE & RESET
+       ==================================================================== */
+    :root {
+      --motion-timing-fluid: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-page: 350ms;
+    }
+
+    body {
+      margin: 0;
+      background: #090a0f;
+      color: #f1f2f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ====================================================================
+       2. VIEW TRANSITIONS API INFRASTRUCTURE
+       ==================================================================== */
+    /* Berikan nama transisi unik pada elemen persisten */
+    .player-surface {
+      view-transition-name: active-player;
+    }
+
+    .player-meta {
+      view-transition-name: active-meta;
+    }
+
+    /* Kustomisasi root transition layer agar tidak menggunakan cross-fade default */
+    ::view-transition-group(active-player) {
+      animation-duration: var(--duration-page);
+      animation-timing-function: var(--motion-timing-fluid);
+    }
+
+    ::view-transition-old(active-player),
+    ::view-transition-new(active-player) {
+      /* Mencegah snapshot scaling artifacts */
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+
+    ::view-transition-old(root) {
+      animation: var(--duration-page) var(--motion-timing-fluid) both fade-out;
+    }
+
+    ::view-transition-new(root) {
+      animation: var(--duration-page) var(--motion-timing-fluid) both fade-in;
+    }
+
+    @keyframes fade-out {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ====================================================================
+       3. VIEW LAYOUTS
+       ==================================================================== */
+    .gallery-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      padding: 32px;
+    }
+
+    .card {
+      background: #141622;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      contain: paint;
+    }
+
+    .thumbnail {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-size: cover;
+      background-position: center;
+      background-color: #23273a;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    /* Detail View Overlay */
+    .detail-view {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 48px;
+      box-sizing: border-box;
+    }
+
+    .detail-view .player-surface {
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .back-btn {
+      align-self: flex-start;
+      margin-bottom: 24px;
+      background: #23273a;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Utility state */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dynamic SPA View Container -->
+  <main id="app-viewport">
+    <div id="gallery" class="gallery-view">
+      <article class="card" data-id="stream-1" onclick="navigateToDetail('stream-1')">
+        <div class="thumbnail player-surface" style="background-image: url('https://picsum.photos/seed/tech/800/450');"></div>
+        <div class="card-body player-meta">
+          <h3>Architecting Zero-Jank Interfaces</h3>
+          <p>Compositor Pipeline & Layer Optimization</p>
+        </div>
+      </article>
+      <!-- Additional elements omitted for brevity -->
+    </div>
+
+    <div id="detail" class="detail-view hidden">
+      <button class="back-btn" onclick="navigateToGallery()">← Kembali ke Katalog</button>
+      <div id="detail-video-container" class="thumbnail player-surface"></div>
+      <div class="player-meta">
+        <h1 id="detail-title">Architecting Zero-Jank Interfaces</h1>
+        <p>Deep dive materi rendering engine dengan zero main-thread blockage.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ========================================================================
+    // 4. TRANSITION ORCHESTRATOR CLASS (Production Grade)
+    // ========================================================================
+    class MotionNavigator {
+      constructor() {
+        this.galleryView = document.getElementById('gallery');
+        this.detailView = document.getElementById('detail');
+        this.detailContainer = document.getElementById('detail-video-container');
+        this.isTransitioning = false;
+      }
+
+      async transitionView(mutationCallback) {
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Cek dukungan asli browser terhadap View Transitions API
+        if (!document.startViewTransition) {
+          console.warn('View Transitions API unsupported. Falling back to discrete DOM mutation.');
+          mutationCallback();
+          this.isTransitioning = false;
+          return;
+        }
+
+        try {
+          const transition = document.startViewTransition(() => {
+            mutationCallback();
+          });
+
+          // Tunggu hingga Compositor Thread siap mengeksekusi animasi
+          await transition.ready;
+        } catch (error) {
+          console.error('Transition engine failed:', error);
+          mutationCallback();
+        } finally {
+          this.isTransitioning = false;
+        }
+      }
+
+      toDetail(streamId) {
+        this.transitionView(() => {
+          this.galleryView.classList.add('hidden');
+          this.detailContainer.style.backgroundImage = "url('https://picsum.photos/seed/tech/800/450')";
+          this.detailView.classList.remove('hidden');
+        });
+      }
+
+      toGallery() {
+        this.transitionView(() => {
+          this.detailView.classList.add('hidden');
+          this.galleryView.classList.remove('hidden');
+        });
+      }
+    }
+
+    const navigatorInstance = new MotionNavigator();
+
+    function navigateToDetail(id) {
+      navigatorInstance.toDetail(id);
+    }
+
+    function navigateToGallery() {
+      navigatorInstance.toGallery();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+/* ==========================================================================
+   ENTERPRISE CONTAINER SYSTEM TOKENS & TYPOGRAPHY ENGINE
+   ========================================================================== */
+
+:root {
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-400: #94a3b8;
+  --color-slate-100: #f1f5f9;
+  --color-emerald-400: #34d399;
+  --color-emerald-950: #064e3b;
+}
+
+.dashboard-grid {
+  display: flex;
+  gap: 1.5rem;
+  background-color: var(--color-slate-950);
+  min-height: 100vh;
+  padding: 2rem;
+  color: var(--color-slate-100);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dashboard-region {
+  background: var(--color-slate-900);
+  border: 1px solid var(--color-slate-800);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   WIDGET CONTAINER ISOLATION BOUNDARY
+   -------------------------------------------------------------------------- */
+.widget-mount {
+  /* Menerapkan size containment pada inline-axis untuk decoupling */
+  container-type: inline-size;
+  container-name: widget-container;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   KPI WIDGET COMPONENT (Encapsulated)
+   -------------------------------------------------------------------------- */
+.kpi-widget {
+  background-color: var(--color-slate-800);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  
+  /* Padding elastis berbasis cqi: min 12px, max 32px */
+  padding: clamp(0.75rem, 0.5rem + 1.5cqi, 2rem);
+  gap: clamp(0.5rem, 0.25rem + 1cqi, 1.25rem);
+  transition: border-color 0.2s ease;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpi-label {
+  font-weight: 600;
+  color: var(--color-slate-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  /* Fluid label size: min 11px, max 14px */
+  font-size: clamp(0.6875rem, 0.625rem + 0.35cqi, 0.875rem);
+}
+
+.kpi-tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: clamp(0.6875rem, 0.625rem + 0.35cqi, 0.8125rem);
+}
+
+.kpi-tag--positive {
+  background-color: var(--color-emerald-950);
+  color: var(--color-emerald-400);
+}
+
+/* Angka Metrik: Perlu interpolasi drastis namun aman dari line breaking */
+.kpi-display {
+  display: flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.kpi-currency {
+  color: var(--color-slate-400);
+  font-weight: 400;
+  /* Dihitung 50% dari ukuran font metrik */
+  font-size: clamp(1rem, 0.5rem + 2cqi, 2rem);
+  margin-right: 0.25rem;
+}
+
+.kpi-value {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  /* Fluid scaling: 24px pada 250px container -> 64px pada 800px container */
+  /* Slope: (64 - 24) / (800 - 250) = 40 / 550 = 0.0727 */
+  /* Intercept: 24 - (0.0727 * 250) = 5.82px = 0.363rem */
+  font-size: clamp(1.5rem, 0.363rem + 7.27cqi, 4rem);
+}
+
+.kpi-meta {
+  color: var(--color-slate-400);
+  font-size: clamp(0.75rem, 0.7rem + 0.25cqi, 0.875rem);
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   MACRO SHIFT VIA CONTAINER QUERIES (Structural Mutation)
+   Ketika widget ditempatkan pada slot dengan ruang inline memadai
+   -------------------------------------------------------------------------- */
+@container widget-container (min-width: 480px) {
+  .kpi-widget {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+  }
+
+  .kpi-header {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  .kpi-display {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+  }
+
+  .kpi-meta {
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+    max-width: 180px;
+    text-align: right;
+    border-left: 1px solid var(--color-slate-800);
+    padding-left: 1.5rem;
+  }
+}
+
+@container widget-container (min-width: 700px) {
+  .kpi-meta {
+    max-width: 260px;
+    font-size: 0.9375rem;
+  }
+}

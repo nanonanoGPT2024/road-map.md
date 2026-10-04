@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>High-Performance Order Stream</title>
+  <style>
+    :root {
+      --row-height: 36px;
+      --color-bid: #10b981;
+      --color-ask: #ef4444;
+      --bg-dark: #0f172a;
+      --bg-surface: #1e293b;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .order-book-container {
+      width: 100%;
+      max-width: 450px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      /* Membatasi dampak layout & paint hanya di dalam kontainer ini */
+      contain: layout paint;
+    }
+
+    .order-book-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      padding: 8px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      border-bottom: 1px solid #334155;
+    }
+
+    .order-stream-viewport {
+      height: 360px;
+      overflow-y: auto;
+      position: relative;
+      /* Memastikan scroll layer terpisah dalam Compositor */
+      will-change: transform;
+    }
+
+    /* Target Komponen Berkinerja Tinggi */
+    .order-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      height: var(--row-height);
+      padding: 0 16px;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      border-bottom: 1px solid #1e293b;
+
+      /* ISOLASI EKSTREM:
+         strict = contain: size layout paint style
+         Browser mematikan propagasi mutasi dari/ke node ini */
+      contain: strict;
+      content-visibility: auto;
+      contain-intrinsic-size: 0 var(--row-height);
+    }
+
+    .order-row[data-side="bid"] .price { color: var(--color-bid); }
+    .order-row[data-side="ask"] .price { color: var(--color-ask); }
+
+    .align-right { text-align: right; }
+
+    /* Indikator Volume Bar yang dirender langsung di GPU */
+    .volume-bar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.15;
+      pointer-events: none;
+      transform-origin: right center;
+      /* Animasi/mutasi hanya memengaruhi Composite thread */
+      will-change: transform;
+      background: currentColor;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="order-book-container">
+    <div class="order-book-header">
+      <span>Price (USD)</span>
+      <span class="align-right">Size</span>
+      <span class="align-right">Time</span>
+    </div>
+    <div class="order-stream-viewport" id="viewport">
+      <!-- Diisi secara dinamis -->
+    </div>
+  </div>
+
+  <script>
+    // Generator Baris Performa Tinggi: Menghindari Layout Thrashing
+    const viewport = document.getElementById('viewport');
+    const TOTAL_ROWS = 10;
+
+    function initRows() {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < TOTAL_ROWS; i++) {
+        const row = document.createElement('div');
+        row.className = 'order-row';
+        row.id = `row-${i}`;
+        row.setAttribute('data-side', i % 2 === 0 ? 'bid' : 'ask');
+        
+        row.innerHTML = `
+          <span class="price">00,000.00</span>
+          <span class="size align-right">0.0000</span>
+          <span class="time align-right">00:00:00</span>
+        `;
+        fragment.appendChild(row);
+      }
+      viewport.appendChild(fragment);
+    }
+
+    // Mutasi Data: 0 Layout Reflow Phase
+    function updateRowMetrics(index, price, size, time, side) {
+      const row = document.getElementById(`row-${index}`);
+      if (!row) return;
+
+      // Update tekstual tidak memicu layout reflow global karena contain: strict
+      row.children[0].textContent = price.toFixed(2);
+      row.children[1].textContent = size.toFixed(4);
+      row.children[2].textContent = time;
+      
+      if (row.getAttribute('data-side') !== side) {
+        row.setAttribute('data-side', side);
+      }
+    }
+
+    initRows();
+
+    // Simulasi Stream WebSocket 60fps
+    let tick = 0;
+    function simulateWebSocketTick() {
+      const targetIndex = tick % TOTAL_ROWS;
+      const basePrice = 64000 + Math.random() * 200;
+      const baseSize = Math.random() * 2;
+      const now = new Date().toTimeString().split(' ')[0];
+      const side = Math.random() > 0.5 ? 'bid' : 'ask';
+
+      updateRowMetrics(targetIndex, basePrice, baseSize, now, side);
+
+      tick++;
+      requestAnimationFrame(simulateWebSocketTick);
+    }
+
+    requestAnimationFrame(simulateWebSocketTick);
+  </script>
+</body>
+</html>

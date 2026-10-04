@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsitektur Browser Observers & Lifecycle</title>
+  <style>
+    .viewport-box {
+      width: 100%;
+      height: 250px;
+      overflow-y: scroll;
+      border: 2px solid #334155;
+    }
+    .spacer {
+      height: 600px;
+      background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px);
+    }
+    .target-box {
+      padding: 16px;
+      margin: 20px;
+      background-color: #0284c7;
+      color: #ffffff;
+      border-radius: 8px;
+      transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .target-box.intersecting {
+      background-color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Browser Observer Engine Baseline</h1>
+  <div class="viewport-box" id="scrollRoot">
+    <div class="spacer">Scroll ke bawah untuk melihat target...</div>
+    <div class="target-box" id="observedTarget">Target Pemantauan</div>
+    <div class="spacer"></div>
+  </div>
+
+  <script>
+    // Inisialisasi AbortController untuk manajemen memory & cleanup terpadu
+    const globalLifecycleSignal = new AbortController();
+    const { signal } = globalLifecycleSignal;
+
+    // 1. INTERSECTION OBSERVER
+    const intersectionCallback = (entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('intersecting');
+          entry.target.textContent = `Elemen Terlihat! Ratio: ${(entry.intersectionRatio * 100).toFixed(1)}%`;
+        } else {
+          entry.target.classList.remove('intersecting');
+          entry.target.textContent = 'Menunggu Visibility...';
+        }
+      });
+    };
+
+    const intersectionObserver = new IntersectionObserver(intersectionCallback, {
+      root: document.getElementById('scrollRoot'),
+      rootMargin: '0px',
+      threshold: [0, 0.5, 1.0]
+    });
+
+    const targetElement = document.getElementById('observedTarget');
+    intersectionObserver.observe(targetElement);
+
+    // 2. RESIZE OBSERVER
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const inlineSize = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width;
+        const blockSize = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+        console.info(`[ResizeObserver] Target Dimensi Baru: ${inlineSize}x${blockSize}px`);
+      }
+    });
+
+    resizeObserver.observe(targetElement);
+
+    // 3. MUTATION OBSERVER
+    const mutationObserver = new MutationObserver((mutationsList) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          console.info('[MutationObserver] Node anak berubah pada target.');
+        } else if (mutation.type === 'attributes') {
+          console.info(`[MutationObserver] Atribut ${mutation.attributeName} dimutasi.`);
+        }
+      }
+    });
+
+    mutationObserver.observe(targetElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+      subtree: false
+    });
+
+    // 4. DOCUMENT LIFECYCLE MANAGEMENT DENGAN ABORTSIGNAL
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        console.warn('[Lifecycle] Dokumen masuk status HIDDEN. Mengirim heartbeat via sendBeacon...');
+        const payload = JSON.stringify({ event: 'tab_hidden', timestamp: Date.now() });
+        navigator.sendBeacon('/api/telemetry', payload);
+      } else {
+        console.info('[Lifecycle] Dokumen kembali ke status ACTIVE.');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange, { signal });
+
+    // Global cleanup handler (misal saat SPA route unmount)
+    window.teardownApp = () => {
+      globalLifecycleSignal.abort();
+      intersectionObserver.disconnect();
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      console.warn('[Cleanup] Seluruh Observer dan Listener berhasil didestruksi.');
+    };
+  </script>
+</body>
+</html>

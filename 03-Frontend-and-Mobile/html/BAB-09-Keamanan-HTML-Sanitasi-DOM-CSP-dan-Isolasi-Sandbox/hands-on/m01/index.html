@@ -1,0 +1,39 @@
+---
+
+## SEKSI 08 — ANALISIS BARIS DEMI BARIS
+
+Berikut adalah analisis arsitektural dari implementasi kode di Seksi 07:
+
+1. **Baris 6–7 (`<meta http-equiv="Content-Security-Policy" ...>`):**
+   - Mendefinisikan baseline boundary.
+   - `default-src 'self'`: Semua asset (style, gambar, fetch) default hanya boleh diambil dari origin yang sama.
+   - `script-src 'self' https://cdnjs.cloudflare.com`: Membatasi eksekusi file script hanya dari origin internal dan CDN cdnjs yang terverifikasi.
+   - `object-src 'none'`: Mematikan runtime plugin warisan seperti Flash, Java, atau objek `<embed>`/`<applet>` yang sering menjadi vektor eksploitasi memory corruption.
+
+2. **Baris 20 (`<iframe id="isolated-frame" sandbox="allow-scripts" ...>`):**
+   - Menetapkan atribut `sandbox="allow-scripts"`.
+   - Perhatikan tidak adanya flag `allow-same-origin`. Hal ini memaksa iframe berjalan di bawah *unique/opaque origin*. Iframe dapat mengeksekusi logika komputasi JS, tetapi seluruh panggilan Web Storage (`localStorage`, `sessionStorage`), HTTP cookie, dan `window.parent` DOM access akan memicu `SecurityError`.
+
+3. **Baris 26–34 (`const untrustedPayload = ...`):**
+   - Mensimulasikan polymorph payload. Tag `<img onerror=...>` mengeksploitasi atribut event handler. Tag `<a href="javascript:...">` mengeksploitasi URI execution schemes. Tag `<form id="testForm">` berupaya memicu *DOM Clobbering*. Tag `<svg><script>` berupaya mengelabui parser HTML standar melalui *Foreign Content Context*.
+
+4. **Baris 37–46 (`const sanitizeConfig = ...`):**
+   - Membangun strict allowlist (`ALLOWED_TAGS` dan `ALLOWED_ATTR`). Pola denylist (memblokir `<script>` saja) selalu gagal karena variasi eksploitasi mencapai ribuan tag dan atribut global.
+   - `RETURN_DOM_FRAGMENT: true`: DOMPurify tidak mengembalikan string yang diserialisasi, melainkan objek `DocumentFragment` asli di memori. Ini adalah mitigasi absolut terhadap mXSS parser round-trip bug.
+
+5. **Baris 53 (`targetElement.replaceChildren(cleanFragment);`):**
+   - Menggunakan API DOM modern `replaceChildren()` alih-alih `innerHTML = ...`. Penggunaan `replaceChildren` menerima node/fragment langsung, menjamin tidak ada parser string yang dievaluasi ulang oleh engine C++ browser.
+
+6. **Baris 65–72 (`try { const secret = window.parent.document.cookie; ... }`):**
+   - Pengujian batas isolasi sandbox. Saat engine JavaScript mengeksekusi instruksi ini dari iframe ber-origin `null`, browser melempar exception:
+     `DOMException: Blocked a frame with origin "null" from accessing a cross-origin frame.`
+
+---
+
+## SEKSI 09 — STUDI KASUS NYATA
+**Skenario:** Aplikasi Enterprise Knowledge Base & Financial Ticketing (PT FinTech Guard Nusantara).
+
+**Insiden:**
+Aplikasi mengizinkan analis tiket keuangan menulis catatan internal dalam format Rich Text (Markdown/HTML) untuk mendokumentasikan anomali transaksi. Sistem menggunakan pipeline sanitasi backend berbasis library regex kustom dan langsung menampilkan hasilnya di frontend melalui manipulasi DOM `div.innerHTML = response.notes`.
+
+Penyerang (seorang insider dengan akses analis tingkat rendah) menyuntikkan payload Mutation XSS bersarang yang memanfaatkan integrasi tag SVG dan MathML:

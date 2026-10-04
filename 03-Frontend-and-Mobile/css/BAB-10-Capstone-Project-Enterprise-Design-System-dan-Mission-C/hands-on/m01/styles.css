@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroPulse Mission-Critical Telemetry</title>
+  <link rel="stylesheet" href="production-system.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="shell__sidebar">
+      <div class="shell__brand">AEROPULSE // OPS</div>
+      <nav class="nav-tree">
+        <button class="nav-tree__item nav-tree__item--active">Fleet Telemetry</button>
+        <button class="nav-tree__item">Propulsion Diagnostics</button>
+        <button class="nav-tree__item">Orbital Matrix</button>
+      </nav>
+    </aside>
+
+    <main class="shell__content">
+      <!-- High-Density Telemetry Stream Header -->
+      <section class="telemetry-grid">
+        <!-- Subgrid Consumer Card 1 -->
+        <article class="metric-widget metric-widget--status-nominal">
+          <header class="metric-widget__header">
+            <span class="metric-widget__label">SYS-01 // Core Altitude</span>
+            <span class="metric-widget__indicator" aria-label="Status: Nominal"></span>
+          </header>
+          <div class="metric-widget__body">
+            <span class="metric-widget__value">41,290.42</span>
+            <span class="metric-widget__unit">FT</span>
+          </div>
+          <footer class="metric-widget__footer">
+            <span class="metric-widget__delta metric-widget__delta--positive">+0.04% / SEC</span>
+          </footer>
+        </article>
+
+        <!-- Subgrid Consumer Card 2 -->
+        <article class="metric-widget metric-widget--status-critical">
+          <header class="metric-widget__header">
+            <span class="metric-widget__label">SYS-02 // Turbine Thermal Core</span>
+            <span class="metric-widget__indicator" aria-label="Status: Critical"></span>
+          </header>
+          <div class="metric-widget__body">
+            <span class="metric-widget__value">1,248.91</span>
+            <span class="metric-widget__unit">°C</span>
+          </div>
+          <footer class="metric-widget__footer">
+            <span class="metric-widget__delta metric-widget__delta--negative">+14.2% CRITICAL</span>
+          </footer>
+        </article>
+
+        <!-- Subgrid Consumer Card 3 -->
+        <article class="metric-widget metric-widget--status-nominal">
+          <header class="metric-widget__header">
+            <span class="metric-widget__label">SYS-03 // Comm Bus Signal</span>
+            <span class="metric-widget__indicator" aria-label="Status: Nominal"></span>
+          </header>
+          <div class="metric-widget__body">
+            <span class="metric-widget__value">-42.10</span>
+            <span class="metric-widget__unit">dBm</span>
+          </div>
+          <footer class="metric-widget__footer">
+            <span class="metric-widget__delta metric-widget__delta--positive">STABLE (99.9%)</span>
+          </footer>
+        </article>
+      </section>
+
+      <!-- Mission Data Stream Logs (Performance Isolated) -->
+      <section class="stream-viewport">
+        <div class="stream-panel">
+          <div class="stream-panel__header">High-Frequency Telemetry Packet Intercept</div>
+          <div class="stream-panel__data-feed" id="perf-telemetry-feed">
+            <!-- Representasi baris terisolasi rendering -->
+            <div class="feed-row"><span class="timestamp">12:00:01.042</span><span class="id">PKT-4091</span><span class="status">OK</span><span class="payload">PAYLOAD_ACK_SYNCED</span></div>
+            <div class="feed-row"><span class="timestamp">12:00:01.074</span><span class="id">PKT-4092</span><span class="status status--warn">DEGRADE</span><span class="payload">PACKET_RETRY_ACK</span></div>
+            <div class="feed-row"><span class="timestamp">12:00:01.106</span><span class="id">PKT-4093</span><span class="status">OK</span><span class="payload">PAYLOAD_ACK_SYNCED</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+/* ==========================================================================
+   1. FONT METRIC OVERRIDE (Pencegahan CLS Saat Webfont Swap)
+   ========================================================================== */
+@font-face {
+  font-family: 'Inter-Fallback';
+  src: local('Arial');
+  ascent-override: 90.49%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+  size-adjust: 107.4%;
+}
+
+:root {
+  --font-primary: 'Inter', 'Inter-Fallback', -apple-system, sans-serif;
+  --focus-ring-color: #2563eb;
+  --text-base-color: #0f172a;
+  --surface-color: #ffffff;
+}
+
+/* ==========================================================================
+   2. SURFACE STYLING & ACCESSIBLE COLOR ADAPTATION
+   ========================================================================== */
+@media (forced-colors: active) {
+  :root {
+    --focus-ring-color: Highlight;
+    --text-base-color: CanvasText;
+    --surface-color: Canvas;
+  }
+}
+
+body {
+  font-family: var(--font-primary);
+  color: var(--text-base-color);
+  background-color: var(--surface-color);
+  margin: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   3. HIGH-PERFORMANCE ANIMATED COMPONENT (Zero Layout Reflow)
+   ========================================================================== */
+.card-interactive {
+  position: relative;
+  contain: layout style paint;
+  will-change: transform;
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--surface-color);
+}
+
+.card-interactive:hover {
+  /* Hanya memicu Compositor Layer tanpa memicu Reflow/Layout */
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* Penanganan vestibular disorder */
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive {
+    transition: none;
+    will-change: auto;
+  }
+  .card-interactive:hover {
+    transform: none;
+    box-shadow: 0 0 0 2px var(--focus-ring-color);
+  }
+}
+
+/* ==========================================================================
+   4. ACCESSIBLE FOCUS MANAGEMENT
+   ========================================================================== */
+.button-action {
+  appearance: none;
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: var(--focus-ring-color);
+  color: #ffffff;
+  border-radius: 6px;
+}
+
+/* Tampilkan fokus ring HANYA saat navigasi keyboard */
+.button-action:focus {
+  outline: none;
+}
+
+.button-action:focus-visible {
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: 3px;
+}

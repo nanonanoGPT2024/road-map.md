@@ -1,0 +1,41 @@
+---
+
+## SEKSI 08 — ANALISIS BARIS DEMI BARIS
+
+Menganalisis implementasi pada **Seksi 07**:
+
+* **Baris 10–39 (`<template id="app-badge-template">`)**: Konten di dalam template ini bersifat *inert*. Browser memvalidasi sintaks HTML di dalamnya, tetapi file gambar tidak di-load, skrip tidak berjalan, dan CSS tidak bocor ke luar dokumen.
+* **Baris 12–20 (`:host`)**: Mendeklarasikan struktur display CSS untuk node `app-badge`. Ini mengeliminasi perilaku default Custom Element yang bertipe `display: inline` tanpa layout properties.
+* **Baris 21–32 (`:host([variant="..."])`)**: Selector bersyarat berdasarkan keberadaan atribut di Light DOM. Mengubah skema warna internal Shadow DOM tanpa memaparkan class internal ke user.
+* **Baris 40 (`<slot>Status Default</slot>`)**: Titik proyeksi konten transklusi. Teks "Berjalan Normal" diproyeksikan ke sini. Jika slot kosong, teks "Status Default" muncul secara native.
+* **Baris 49 (`static get observedAttributes()`)**: Mengembalikan array string atribut yang didaftarkan ke rendering engine. Perubahan pada atribut selain yang ada di array ini tidak akan memicu trigger callback C++ browser.
+* **Baris 53 (`super()`)**: Mengesahkan prototype chain kelas. Harus dipanggil sebelum mengakses keyword `this`.
+* **Baris 55 (`this.attachShadow({ mode: 'open' })`)**: Menginisialisasi context Shadow DOM baru untuk host instance dan mengikatnya ke reference internal.
+* **Baris 56 (`template.content.cloneNode(true)`)**: Melakukan kloning *deep memory* dari `DocumentFragment` template. Operasi ini jauh lebih efisien dibanding parsing string menggunakan `innerHTML`.
+* **Baris 59–63 (`connectedCallback()`)**: Invokasi siklus hidup saat node terikat pada document DOM tree aktif. Di sini operasi manipulasi atribut awal diterapkan secara aman.
+* **Baris 65–70 (`attributeChangedCallback(...)`)**: Dipanggil secara asinkron atau sinkron saat atribut yang diobservasi berubah melalui JS (`setAttribute`) atau parsing HTML parser.
+* **Baris 78 (`customElements.define('app-badge', AppBadge)`)**: Mendaftarkan custom tag ke registry dokumen browser. Mulai dari titik ini, setiap kali tag `<app-badge>` ditemukan di parser, kelas `AppBadge` akan diinstansiasi.
+
+---
+
+## SEKSI 09 — STUDI KASUS NYATA (Real-World Enterprise Production Scenario)
+
+### Masalah: Real-Time Telemetry Data-Grid Micro-Frontend
+Pada platform enterprise monitoring infrastruktur, tim dashboard harus menampilkan matriks status lebih dari 10.000 kontainer Kubernetes secara serentak. 
+
+**Bottleneck Arsitektural Sebelumnya:**
+1. Menggunakan komponen berbasis React/Vue di dalam loop rendering memakan memori JS heap hingga >400 MB karena overhead Virtual DOM wrapper, fiber tree tracking, dan closure listeners.
+2. Injecting `<style>` tag berulang kali di setiap item tabel memicu *Recalculate Style* berulang (Thrashing) yang membuat Frame Rate drop drastis di bawah 20 FPS saat update stream WebSocket 60Hz masuk.
+3. CSS bertabrakan antar widget yang dibuat oleh tim platform berbeda (nama class global saling menimpa).
+
+**Solusi Desain Arsitektur Baru:**
+Membangun elemen kustom `telemetry-meter` mandiri menggunakan Web Components native murni dengan:
+* **Constructable StyleSheets (`adoptedStyleSheets`)**: Satu single instance CSS yang di-cache di memori GPU/C++ styling engine, dibagikan ke 10.000 Shadow Roots secara serentak (zero memory redundancy).
+* **AbortController Lifecycle Disposer**: Mencegah kebocoran memori dari WebSocket/DOM listeners saat elemen di-*virtualize* atau di-unmount.
+* **Bypass V-DOM Direct Mutasi**: Memperbarui status internal elemen langsung via Shadow DOM mutation pipeline saat pesan biner tiba, menjaga performa tetap stabil di 60 FPS pada memori heap <30 MB.
+
+---
+
+## SEKSI 10 — IMPLEMENTASI KASUS NYATA & HANDS-ON PRODUCTION CODE
+
+Di bawah ini adalah kode produksi untuk custom element `TelemetryMeter` yang mengimplementasikan **Constructable StyleSheets**, manajemen lifecycle anti-leak memori (`AbortController`), serta enkapsulasi performa tinggi.

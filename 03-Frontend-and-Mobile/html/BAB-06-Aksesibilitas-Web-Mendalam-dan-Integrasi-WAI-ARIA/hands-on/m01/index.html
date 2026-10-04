@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Accessible Modal Trap</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+      padding: 2rem;
+    }
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .backdrop[hidden] {
+      display: none;
+    }
+    .modal-surface {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    :focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Halaman Utama (Main Context) -->
+  <main id="app-root">
+    <h1>Dashboard Transaksi Finansial</h1>
+    <p>Silakan konfirmasi transaksi pembayaran tagihan Anda di bawah ini.</p>
+    <button type="button" id="open-modal-trigger" class="btn-primary">
+      Otorisasi Pembayaran (ID: #TRX-99482)
+    </button>
+  </main>
+
+  <!-- Accessible Modal Container -->
+  <div id="modal-backdrop" class="backdrop" hidden>
+    <div 
+      id="auth-modal" 
+      class="modal-surface" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby="modal-title-node" 
+      aria-describedby="modal-desc-node">
+      
+      <div class="modal-header">
+        <h2 id="modal-title-node" style="margin: 0; font-size: 1.25rem;">Otorisasi Transaksi</h2>
+        <button type="button" id="modal-close-icon" aria-label="Tutup jendela otorisasi">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p id="modal-desc-node">
+          Anda akan melakukan transfer dana sebesar <strong>Rp 25.000.000</strong> ke Rekening Vendor Utama. Aksi ini tidak dapat dibatalkan.
+        </p>
+        <label for="otp-input" style="display: block; margin-top: 12px; font-weight: 500;">
+          Masukkan Token 6-Digit:
+        </label>
+        <input 
+          type="text" 
+          id="otp-input" 
+          maxlength="6" 
+          autocomplete="one-time-code" 
+          style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel-btn">Batalkan</button>
+        <button type="button" id="modal-confirm-btn" style="background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 4px;">
+          Konfirmasi & Eksekusi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class AccessibleModalController {
+      constructor(backdropId, modalId, appRootId) {
+        this.backdrop = document.getElementById(backdropId);
+        this.modal = document.getElementById(modalId);
+        this.appRoot = document.getElementById(appRootId);
+        this.previouslyFocusedElement = null;
+        
+        // CSS Selector untuk seluruh elemen yang berpotensi menerima fokus
+        this.focusableElementsSelector = [
+          'a[href]',
+          'area[href]',
+          'input:not([disabled])',
+          'select:not([disabled])',
+          'textarea:not([disabled])',
+          'button:not([disabled])',
+          'iframe',
+          'object',
+          'embed',
+          '[tabindex]:not([tabindex="-1"])',
+          '[contenteditable]'
+        ].join(',');
+
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+      }
+
+      open(triggerElement) {
+        this.previouslyFocusedElement = triggerElement;
+        
+        // Sembunyikan pohon aplikasi dari AT
+        this.appRoot.setAttribute('aria-hidden', 'true');
+        this.backdrop.hidden = false;
+
+        document.addEventListener('keydown', this.handleKeyDown);
+
+        // Alihkan fokus ke input utama di dalam modal secara aman
+        const initialFocusNode = this.modal.querySelector('#otp-input') || this.getFocusableNodes()[0];
+        if (initialFocusNode) {
+          initialFocusNode.focus();
+        }
+      }
+
+      close() {
+        this.backdrop.hidden = true;
+        this.appRoot.removeAttribute('aria-hidden');
+        document.removeEventListener('keydown', this.handleKeyDown);
+
+        // Restorasi fokus kembali ke pemanggil awal
+        if (this.previouslyFocusedElement && typeof this.previouslyFocusedElement.focus === 'function') {
+          this.previouslyFocusedElement.focus();
+        }
+      }
+
+      getFocusableNodes() {
+        const nodes = Array.from(this.modal.querySelectorAll(this.focusableElementsSelector));
+        // Filter elemen yang disembunyikan via CSS (display: none / visibility: hidden)
+        return nodes.filter(node => node.offsetWidth > 0 || node.offsetHeight > 0 || node.getClientRects().length > 0);
+      }
+
+      handleKeyDown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.close();
+          return;
+        }
+
+        if (event.key === 'Tab') {
+          const focusableNodes = this.getFocusableNodes();
+          if (focusableNodes.length === 0) {
+            event.preventDefault();
+            return;
+          }
+
+          const firstNode = focusableNodes[0];
+          const lastNode = focusableNodes[focusableNodes.length - 1];
+
+          if (event.shiftKey) {
+            // Mundur (Shift + Tab)
+            if (document.activeElement === firstNode) {
+              event.preventDefault();
+              lastNode.focus();
+            }
+          } else {
+            // Maju (Tab)
+            if (document.activeElement === lastNode) {
+              event.preventDefault();
+              firstNode.focus();
+            }
+          }
+        }
+      }
+    }
+
+    // Instansiasi dan Pengikatan Event
+    const modalController = new AccessibleModalController('modal-backdrop', 'auth-modal', 'app-root');
+    const openBtn = document.getElementById('open-modal-trigger');
+    const closeBtn = document.getElementById('modal-close-icon');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+
+    openBtn.addEventListener('click', () => modalController.open(openBtn));
+    closeBtn.addEventListener('click', () => modalController.close());
+    cancelBtn.addEventListener('click', () => modalController.close());
+    
+    confirmBtn.addEventListener('click', () => {
+      alert('Transaksi berhasil diproses!');
+      modalController.close();
+    });
+  </script>
+</body>
+</html>

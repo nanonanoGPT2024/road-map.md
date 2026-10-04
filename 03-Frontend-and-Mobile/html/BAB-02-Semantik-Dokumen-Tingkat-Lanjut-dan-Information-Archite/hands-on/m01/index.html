@@ -1,0 +1,58 @@
++--------------------------------------------------------------------------------------------------+
+| WEB BROWSER CORE ENGINE (Blink / Gecko / WebKit)                                                 |
+|                                                                                                  |
+|  Raw Token Stream:                                                                               |
+|  <header> -> <nav> -> <main> -> <article> -> <h2> -> <aside> -> <footer>                         |
+|                                                                                                  |
+|                                   PARSER LAYER                                                   |
+|                                         │                                                        |
+|                                         ▼                                                        |
+|  +--------------------------------------------------------------------------------------------+  |
+|  | DOM Tree Nodes                                                                             |  |
+|  |                                                                                            |  |
+|  |             HTMLDocument                                                                   |  |
+|  |                   │                                                                        |  |
+|  |                 <html>                                                                     |  |
+|  |                   │                                                                        |  |
+|  |                 <body>                                                                     |  |
+|  |       ┌───────────┴───────────┬──────────────────────┐                                     |  |
+|  |    <header>                <main>                 <footer>                                 |  |
+|  |       │                       │                      │                                     |  |
+|  |     <nav>           ┌─────────┴─────────┐         <small>                                  |  |
+|  |                   <article>          <aside>                                               |  |
+|  |                     │                   │                                                  |  |
+|  |                    <h2>                <p>                                                 |  |
+|  +--------------------------------------------------------------------------------------------+  |
+|                                         │                                                        |
+|                    TRANSLATION TO COMPUTED ACCESSIBILITY TREE                                    |
+|                                         ▼                                                        |
+|  +--------------------------------------------------------------------------------------------+  |
+|  | Accessibility Tree (Platform APIs: MSAA / IAccessible2 / UIA / ATK)                        |  |
+|  |                                                                                            |  |
+|  | [RootWebArea]                                                                              |  |
+|  |   │                                                                                        |  |
+|  |   ├── [banner] (Implicitly from <header> directly under <body>)                            |  |
+|  |   │     └── [navigation] (Implicitly from <nav>)                                           |  |
+|  |   │                                                                                        |  |
+|  |   ├── [main] (Implicitly from <main>)                                                      |  |
+|  |   │     │                                                                                  |  |
+|  |   │     ├── [article] (Implicitly from <article>)                                          |  |
+|  |   │     │     └── [heading, Level: 2, Name: "Judul Konten"]                                |  |
+|  |   │     │                                                                                  |  |
+|  |   │     └── [complementary] (Implicitly from <aside> scoped to <main>)                     |  |
+|  |   │           └── [paragraph]                                                              |  |
+|  |   │                                                                                        |  |
+|  |   └── [contentinfo] (Implicitly from <footer> directly under <body>)                       |  |
+|  +--------------------------------------------------------------------------------------------+  |
+|                                         │                                                        |
++-----------------------------------------┼--------------------------------------------------------+
+                                          │ Exposed through OS Accessibility Bridge
+                                          ▼
+                +---------------------------------------------------+
+                | ASSISTIVE TECHNOLOGIES (NVDA / JAWS / VoiceOver)  |
+                |                                                   |
+                | Rotor Navigation:                                 |
+                | - Jump directly to Landmarks (D, R shortcuts)     |
+                | - Jump directly to Headings (H, 1-6 shortcuts)   |
+                | - Read Structural Roles without synthetic ARIA    |
+                +---------------------------------------------------+

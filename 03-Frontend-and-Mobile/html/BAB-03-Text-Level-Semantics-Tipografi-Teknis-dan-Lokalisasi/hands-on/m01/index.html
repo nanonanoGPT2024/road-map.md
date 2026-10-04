@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Global Settlement Audit Stream</title>
+  <style>
+    :root {
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --bg-surface: #ffffff;
+      --text-main: #09090b;
+      --text-muted: #71717a;
+      --border-color: #e4e4e7;
+      --del-bg: #fee2e2;
+      --ins-bg: #dcfce7;
+      --highlight: #fef08a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      color: var(--text-main);
+      padding: 2rem;
+      margin: 0;
+    }
+
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    /* Tipografi Teknis Finansial */
+    .numeric-cell {
+      font-variant-numeric: tabular-nums lining-nums;
+      font-family: var(--font-mono);
+    }
+
+    mark.audit-highlight {
+      background: var(--highlight);
+      padding: 0.1rem 0.3rem;
+      border-radius: 2px;
+      font-weight: 500;
+    }
+
+    del.audit-delta {
+      background: var(--del-bg);
+      color: #991b1b;
+      text-decoration: line-through;
+      padding: 0.1rem 0.2rem;
+    }
+
+    ins.audit-delta {
+      background: var(--ins-bg);
+      color: #166534;
+      text-decoration: none;
+      border-bottom: 1px solid #166534;
+      padding: 0.1rem 0.2rem;
+    }
+
+    ruby {
+      font-size: 0.9em;
+    }
+
+    ruby rt {
+      font-size: 0.65em;
+      color: var(--text-muted);
+    }
+
+    .meta-subtext {
+      color: var(--text-muted);
+      display: block;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Log Penyelesaian Transaksi Real-Time (Multi-Region)</h1>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Referensi</th>
+          <th>Stempel Waktu (ISO-8601)</th>
+          <th>Counterparty (Inisiator)</th>
+          <th>Aset & Instrumen</th>
+          <th>Nilai Eksekusi</th>
+          <th>Status Rekonsiliasi</th>
+        </tr>
+      </thead>
+      <tbody id="settlement-stream">
+        <!-- Record 1: RTL BiDi Username + Modification Tracking -->
+        <tr>
+          <td class="numeric-cell">
+            <code>TX-90123-A</code>
+          </td>
+          <td>
+            <time datetime="2025-05-18T10:14:32.124Z">
+              18 Mei 2025, 10:14:32 UTC
+            </time>
+          </td>
+          <td>
+            <!-- Proteksi BiDi Leakage untuk nama Arab -->
+            <bdi lang="ar" dir="rtl">علي عبد الله</bdi>
+            <span class="meta-subtext">ID: <data value="ACC-44910">44910</data></span>
+          </td>
+          <td>
+            USD / SAR
+          </td>
+          <td class="numeric-cell">
+            <del datetime="2025-05-18T10:15:00Z" cite="#auditor-404">3.7505</del>
+            <ins datetime="2025-05-18T10:15:00Z" cite="#auditor-404">3.7512</ins>
+          </td>
+          <td>
+            <span class="badge">
+              <strong>SETTLED</strong> (Manual Override)
+            </span>
+          </td>
+        </tr>
+
+        <!-- Record 2: Japanese Ruby Typography + Highlight + Ordinal -->
+        <tr>
+          <td class="numeric-cell">
+            <code>TX-90124-B</code>
+          </td>
+          <td>
+            <time datetime="2025-05-18T10:16:05.890Z">
+              18 Mei 2025, 10:16:05 UTC
+            </time>
+          </td>
+          <td>
+            <bdi lang="ja">高橋 健太</bdi>
+            <span class="meta-subtext">ID: <data value="ACC-11029">11029</data></span>
+          </td>
+          <td>
+            <!-- Anotasi Fonetik untuk Aset Obligasi Pemerintah Jepang -->
+            <ruby>
+              国 <rp>(</rp><rt>こく</rt><rp>)</rp>
+              債 <rp>(</rp><rt>さい</rt><rp>)</rp>
+            </ruby>
+            <span>JGB 10-Yr 2<sup>nd</sup> Gen</span>
+          </td>
+          <td class="numeric-cell">
+            <mark class="audit-highlight">&yen; 10,000,000</mark>
+          </td>
+          <td>
+            <em>Dalam Kliring</em>
+          </td>
+        </tr>
+
+        <!-- Record 3: Command & Response Sampling -->
+        <tr>
+          <td class="numeric-cell">
+            <code>TX-90125-C</code>
+          </td>
+          <td>
+            <time datetime="2025-05-18T10:18:22.000Z">
+              18 Mei 2025, 10:18:22 UTC
+            </time>
+          </td>
+          <td>
+            <bdi>Apex_HFT_Bot_01</bdi>
+            <span class="meta-subtext">Automated Gateway</span>
+          </td>
+          <td>EUR / USD</td>
+          <td class="numeric-cell">1.0845</td>
+          <td>
+            <samp>STATUS_OK_200</samp>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    /**
+     * Engine Parsing Telemetri Client-side
+     * Membuktikan kemudahan ekstraksi data berbasis elemen semantic standar
+     */
+    function extractAuditMetrics() {
+      const rows = document.querySelectorAll('#settlement-stream tr');
+      const metrics = [];
+
+      rows.forEach(row => {
+        const timeEl = row.querySelector('time');
+        const bdiEl = row.querySelector('bdi');
+        const dataEl = row.querySelector('data');
+        const delEl = row.querySelector('del');
+        const insEl = row.querySelector('ins');
+
+        metrics.push({
+          timestamp: timeEl ? timeEl.getAttribute('datetime') : null,
+          initiatorName: bdiEl ? bdiEl.textContent : null,
+          initiatorLocale: bdiEl ? bdiEl.getAttribute('lang') || 'unknown' : null,
+          accountId: dataEl ? dataEl.value : null,
+          hasModifications: !!(delEl && insEl),
+          deltaDetails: (delEl && insEl) ? {
+            from: delEl.textContent,
+            to: insEl.textContent,
+            reasonRef: insEl.getAttribute('cite'),
+            modifiedAt: insEl.getAttribute('datetime')
+          } : null
+        });
+      });
+
+      return metrics;
+    }
+
+    // Eksekusi Audit Logging Engine
+    console.log('[AUDIT TELEMETRY EXTRACTED]:', extractAuditMetrics());
+  </script>
+</body>
+</html>

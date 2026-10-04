@@ -1,0 +1,56 @@
++---------------------------------------------------------------------------------------------------------+
+|                                    FASE DEFINISI & BUILD SYSTEM                                         |
++---------------------------------------------------------------------------------------------------------+
+|  Figma / Tokens Studio (JSON DTCG Format)                                                                |
+|  └── Primitive: { "color": { "blue": { "500": { "$value": "#3B82F6", "$type": "color" } } } }           |
+|  └── Semantic:  { "surface": { "action": { "$value": "{color.blue.500}", "$type": "color" } } }        |
++---------------------------------------------------------------------------------------------------------+
+                                                  │
+                                                  ▼
++---------------------------------------------------------------------------------------------------------+
+|  Token Transformer Pipeline (Style Dictionary / Custom AST Tooling)                                     |
+|  ├── Validasi Skema & Tipe Data                                                                        |
+|  ├── Resolusi Referensi Silang (Aliasing)                                                              |
+|  └── Emit: CSS Variables, TypeScript Types, JSON Metadata                                                |
++---------------------------------------------------------------------------------------------------------+
+                                                  │
+                                                  ▼
++---------------------------------------------------------------------------------------------------------+
+|                                  FASE RUNTIME BROWSER RENDERING                                         |
++---------------------------------------------------------------------------------------------------------+
+|                                                                                                         |
+|  1. REGISTRASI HOUDINI ENGINE (Typed OM via CSS @property)                                               |
+|     +---------------------------------------------------------------------------------------------+     |
+|     | @property --sys-surface-primary {                                                           |     |
+|     |   syntax: '<color>'; inherits: true; initial-value: #ffffff;                                |     |
+|     | }                                                                                           |     |
+|     +---------------------------------------------------------------------------------------------+     |
+|                                                  │                                                      |
+|                                                  ▼                                                      |
+|  2. HIERARKI KASKADE (@layer Orchestration)                                                             |
+|     +---------------------------------------------------------------------------------------------+     |
+|     | @layer tokens.primitive {                                                                   |     |
+|     |   :root { --pr-blue-500: #3b82f6; --pr-slate-900: #0f172a; }                                |     |
+|     | }                                                                                           |     |
+|     | @layer tokens.semantic {                                                                    |     |
+|     |   :root, [data-theme="light"] { --sys-surface-bg: var(--pr-blue-500); }                     |     |
+|     |   [data-theme="dark"]         { --sys-surface-bg: var(--pr-slate-900); }                    |     |
+|     | }                                                                                           |     |
+|     | @layer components {                                                                         |     |
+|     |   .c-card {                                                                                 |     |
+|     |     --comp-card-bg: var(--sys-surface-bg);                                                  |     |
+|     |     background-color: var(--comp-card-bg);                                                  |     |
+|     |   }                                                                                         |     |
+|     | }                                                                                           |     |
+|     +---------------------------------------------------------------------------------------------+     |
+|                                                  │                                                      |
+|                                                  ▼                                                      |
+|  3. STYLE ENGINE (Recalculate Style Phase)                                                              |
+|     ├── Parse DOM & CSSOM                                                                               |
+|     ├── Resolusi Directed Acyclic Graph (DAG) Token Kustom                                              |
+|     └── Evaluasi Inheritance Boundary (Isolasi Style Blast Radius)                                      |
+|                                                  │                                                      |
+|                                                  ▼                                                      |
+|  4. LAYOUT & PAINT PIPELINE                                                                             |
+|     └── Render Frame ke Tampilan Display Layar                                                           |
++---------------------------------------------------------------------------------------------------------+
