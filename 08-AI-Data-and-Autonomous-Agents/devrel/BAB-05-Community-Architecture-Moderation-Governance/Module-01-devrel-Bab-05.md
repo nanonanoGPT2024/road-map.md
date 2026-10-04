@@ -610,7 +610,7 @@ async def run_lab_scenarios():
             author_id="dev_bob",
             content_raw=(
                 "Here is my test script, but it is failing with status 401: "
-                "sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                "sk-proj-"
             )
         ),
         # Kasus 4: Eksploitasi Kode Berbahaya (AST Attack)
