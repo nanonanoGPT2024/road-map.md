@@ -1,0 +1,82 @@
+[
+    {
+        "user_id": "usr_0",
+        "variant": "A",
+        "time_spent_seconds": 146.7,
+        "frustration_clicks": 4,
+        "converted": false,
+        "timestamp": 1791133457.7124045
+    },
+    {
+        "user_id": "usr_1",
+        "variant": "A",
+        "time_spent_seconds": 112.62,
+        "frustration_clicks": 5,
+        "converted": false,
+        "timestamp": 1791133457.712522
+    },
+    {
+        "user_id": "usr_2",
+        "variant": "A",
+        "time_spent_seconds": 151.47,
+        "frustration_clicks": 2,
+        "converted": false,
+        "timestamp": 1791133457.712547
+    },
+    {
+        "user_id": "usr_3",
+        "variant": "A",
+        "time_spent_seconds": 130.16,
+        "frustration_clicks": 3,
+        "converted": false,
+        "timestamp": 1791133457.712577
+    },
+    {
+        "user_id": "usr_4",
+        "variant": "A",
+        "time_spent_seconds": 112.06,
+        "frustration_clicks": 1,
+        "converted": false,
+        "timestamp": 1791133457.7126157
+    },
+    {
+        "user_id": "usr_5",
+        "variant": "A",
+        "time_spent_seconds": 132.28,
+        "frustration_clicks": 0,
+        "converted": false,
+        "timestamp": 1791133457.7126327
+    },
+    {
+        "user_id": "usr_6",
+        "variant": "A",
+        "time_spent_seconds": 126.26,
+        "frustration_clicks": 3,
+        "converted": false,
+        "timestamp": 1791133457.7126465
+    },
+    {
+        "user_id": "usr_7",
+        "variant": "A",
+        "time_spent_seconds": 59.18,
+        "frustration_clicks": 5,
+        "converted": false,
+        "timestamp": 1791133457.7126706
+    },
+    {
+        "user_id": "usr_8",
+        "variant": "A",
+        "time_spent_seconds": 95.54,
+        "frustration_clicks": 5,
+        "converted": false,
+        "timestamp": 1791133457.712683
+    },
+    {
+        "user_id": "usr_9",
+        "variant": "A",
+        "time_spent_seconds": 108.59,
+        "frustration_clicks": 1,
+        "converted": false,
+        "timestamp": 1791133457.7126968
+    }
+]
