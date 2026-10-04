@@ -52,7 +52,7 @@ def generate_checklist():
                 bab_sample = ", ".join(babs[:4]) + ("..." if len(babs) > 4 else "")
                 block.append(f"  - *Bab fisik:* `{bab_sample}`\n")
         
-        cat_status = "RUNNING" if tid == "t_1c34908b" else ("DONE" if cat_done == len(subdirs) and len(subdirs) > 0 else "TODO")
+        cat_status = "DONE" if cat_done == len(subdirs) and len(subdirs) > 0 else "TODO"
         header = f"## 📁 {cat} (Kanban: `{tid}` | Status: `{cat_status}`)\n"
         header += f"**Ringkasan Kategori:** {cat_done}/{len(subdirs)} Track Selesai 10 BAB ({(cat_done/len(subdirs)*100 if subdirs else 0):.1f}%)\n\n"
         cat_blocks.append(header + "".join(block) + "\n---\n\n")
