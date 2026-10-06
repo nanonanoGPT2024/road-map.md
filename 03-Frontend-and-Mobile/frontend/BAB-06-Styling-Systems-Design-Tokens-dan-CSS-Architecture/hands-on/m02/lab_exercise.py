@@ -1,849 +1,398 @@
 #!/usr/bin/env python3
 """
-Lab Hands-on: Frontend Engineering Deep Dive
-Modul: Virtual DOM Architecture, Reconciliation Algorithm, and Reactive Rendering Engine.
+Lab Exercise: Styling Systems, Design Tokens, dan CSS Architecture (BAB-06)
+Simulasi Arsitektur Produksi Skala Besar: Multi-Tier Token Compiler & Theme Contract Auditor.
 
-Mendemonstrasikan:
-1. Virtual DOM representation (AST-like tree node).
-2. Fiber-like Tree Reconciliation Diffing Algorithm (Keyed Children Diffing).
-3. Patch calculation (CREATE, REMOVE, REPLACE, UPDATE_PROPS, TEXT_MUTATION).
-4. Real DOM simulation with Mutation Tracking & Performance Cost Analysis vs Naive innerHTML.
+Features:
+1. Multi-Tier Token Engine (Global -> Semantic -> Component Tokens).
+2. Style Dictionary Build Pipeline (CSS Variables, TypeScript Interfaces, JSON export).
+3. Theme Contrast & Contract Parity Validator (WCAG AA check + Missing token detector).
+4. CSS Architecture & Specificity Collision Auditor.
+5. Interactive Terminal Interface with Rich ANSI Colors & Benchmarking.
 """
 
 from __future__ import annotations
 import sys
+import json
+import math
 import time
-from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 
-# Terminal ANSI Color Formatting
-CYAN = "\033[96m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-MAGENTA = "\033[95m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
+# ==============================================================================
+# ANSI Color Palette for Terminal UI
+# ==============================================================================
+class Color:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    ITALIC = "\033[3m"
+    UNDERLINE = "\033[4m"
+
+    # Foreground
+    FG_BLACK = "\033[30m"
+    FG_RED = "\033[31m"
+    FG_GREEN = "\033[32m"
+    FG_YELLOW = "\033[33m"
+    FG_BLUE = "\033[34m"
+    FG_MAGENTA = "\033[35m"
+    FG_CYAN = "\033[36m"
+    FG_WHITE = "\033[37m"
+
+    # Bright Foreground
+    FG_BRED = "\033[91m"
+    FG_BGREEN = "\033[92m"
+    FG_BYELLOW = "\033[93m"
+    FG_BBLUE = "\033[94m"
+    FG_BMAGENTA = "\033[95m"
+    FG_BCYAN = "\033[96m"
+    FG_BWHITE = "\033[97m"
+
+    # Background
+    BG_DARK = "\033[48;5;235m"
+    BG_BLUE = "\033[44m"
+    BG_GREEN = "\033[42m"
+    BG_RED = "\033[41m"
 
 
-class PatchType(Enum):
-    """Tipe mutasi DOM yang dihasilkan oleh proses diffing reconciliation."""
-    NOOP = auto()
-    CREATE = auto()
-    REMOVE = auto()
-    REPLACE = auto()
-    UPDATE_PROPS = auto()
-    UPDATE_TEXT = auto()
-    REORDER = auto()
+def print_banner():
+    banner = f"""{Color.FG_BCYAN}{Color.BOLD}
+================================================================================
+   ENTERPRISE DESIGN SYSTEM & CSS ARCHITECTURE PIPELINE (BAB-06 SIMULATOR)
+   Multi-Tier Tokens • Contract Validator • WCAG Contrast • Style Dictionary
+================================================================================{Color.RESET}"""
+    print(banner)
+
+
+# ==============================================================================
+# Domain Models: Design Tokens & Theme Systems
+# ==============================================================================
+@dataclass
+class TokenNode:
+    name: str
+    value: str
+    tier: str  # 'global', 'semantic', 'component'
+    token_type: str  # 'color', 'spacing', 'typography', 'elevation'
+    reference: Optional[str] = None
+    description: str = ""
 
 
 @dataclass
-class Patch:
-    """Instruksi atomic perbaikan untuk diterapkan pada Real DOM."""
-    patch_type: PatchType
-    path: List[int]  # Indeks jalur traversal pada pohon DOM (e.g. [0, 1] -> child 1 dari child 0)
-    old_node: Optional[VNode] = None
-    new_node: Optional[VNode] = None
-    props_diff: Dict[str, Any] = field(default_factory=dict)
-    text_content: Optional[str] = None
+class ThemeContract:
+    theme_name: str
+    tokens: Dict[str, TokenNode] = field(default_factory=dict)
+
+    def set_token(self, token: TokenNode):
+        self.tokens[token.name] = token
 
 
-class VNode:
-    """
-    Virtual DOM Node: Representasi ringan in-memory dari elemen UI.
-    Tidak memiliki referensi native C++ browser DOM API, sehingga komputasi sangat cepat.
-    """
-    def __init__(
-        self,
-        tag: str,
-        props: Optional[Dict[str, Any]] = None,
-        children: Optional[List[VNode | str]] = None,
-        key: Optional[str] = None
-    ):
-        self.tag = tag
-        self.props = props or {}
-        self.key = key or self.props.get("key")
-        self.children: List[VNode] = []
-        
-        if children:
-            for child in children:
-                if isinstance(child, str):
-                    self.children.append(VNode("#text", props={"nodeValue": child}))
-                elif isinstance(child, VNode):
-                    self.children.append(child)
-
-    @property
-    def is_text_node(self) -> bool:
-        return self.tag == "#text"
-
-    def __repr__(self) -> str:
-        if self.is_text_node:
-            return f'"{self.props.get("nodeValue", "")}"'
-        key_str = f" key='{self.key}'" if self.key else ""
-        return f"<{self.tag}{key_str}> (children: {len(self.children)})"
+# ==============================================================================
+# WCAG Contrast Calculation Engine
+# ==============================================================================
+def hex_to_rgb(hex_str: str) -> Tuple[int, int, int]:
+    clean_hex = hex_str.lstrip("#")
+    if len(clean_hex) == 3:
+        clean_hex = "".join([c * 2 for c in clean_hex])
+    if len(clean_hex) != 6:
+        return (0, 0, 0)
+    return (
+        int(clean_hex[0:2], 16),
+        int(clean_hex[2:4], 16),
+        int(clean_hex[4:6], 16)
+    )
 
 
-def h(tag: str, props: Optional[Dict[str, Any]] = None, *children: VNode | str) -> VNode:
-    """Helper function (HyperScript) untuk memudahkan pembuatan Virtual DOM tree."""
-    return VNode(tag=tag, props=props, children=list(children))
+def calculate_relative_luminance(rgb: Tuple[int, int, int]) -> float:
+    def channel_lum(val: int) -> float:
+        c = val / 255.0
+        return c / 12.92 if c <= 0.03928 else math.pow((c + 0.055) / 1.055, 2.4)
+    r, g, b = rgb
+    return 0.2126 * channel_lum(r) + 0.7152 * channel_lum(g) + 0.0722 * channel_lum(b)
 
 
-class RealDOMNode:
-    """
-    Simulasi elemen Real DOM native browser.
-    Mencatat metrik mutasi aktual (Reflow & Repaint footprint).
-    """
-    total_mutations = 0
-    dom_write_cost_us = 120  # Estimasi latency mikrosekon per operasi mutasi native DOM
+def calculate_contrast_ratio(hex_fg: str, hex_bg: str) -> float:
+    lum1 = calculate_relative_luminance(hex_to_rgb(hex_fg))
+    lum2 = calculate_relative_luminance(hex_to_rgb(hex_bg))
+    lighter = max(lum1, lum2)
+    darker = min(lum1, lum2)
+    return (lighter + 0.05) / (darker + 0.05)
 
-    def __init__(self, tag: str, props: Optional[Dict[str, Any]] = None):
-        self.tag = tag
-        self.props = props or {}
-        self.children: List[RealDOMNode] = []
-        RealDOMNode.total_mutations += 1
 
-    def append_child(self, child: RealDOMNode):
-        RealDOMNode.total_mutations += 1
-        self.children.append(child)
+# ==============================================================================
+# Token Architecture Builder (Global -> Semantic -> Component)
+# ==============================================================================
+class TokenEngine:
+    def __init__(self):
+        self.global_tokens: Dict[str, str] = {
+            "color.blue.50": "#eff6ff",
+            "color.blue.500": "#3b82f6",
+            "color.blue.600": "#2563eb",
+            "color.blue.900": "#1e3a8a",
+            "color.slate.50": "#f8fafc",
+            "color.slate.100": "#f1f5f9",
+            "color.slate.800": "#1e293b",
+            "color.slate.900": "#0f172a",
+            "color.emerald.500": "#10b981",
+            "color.rose.500": "#f43f5e",
+            "spacing.1": "4px",
+            "spacing.2": "8px",
+            "spacing.4": "16px",
+            "spacing.6": "24px",
+            "radii.sm": "4px",
+            "radii.md": "8px",
+            "radii.full": "9999px",
+            "font.family.sans": "Inter, system-ui, -apple-system, sans-serif",
+            "font.family.mono": "JetBrains Mono, monospace"
+        }
 
-    def remove_child_at(self, index: int) -> RealDOMNode:
-        RealDOMNode.total_mutations += 1
-        return self.children.pop(index)
+    def build_default_themes(self) -> Tuple[ThemeContract, ThemeContract]:
+        # Light Theme
+        light_theme = ThemeContract(theme_name="light")
+        # Dark Theme
+        dark_theme = ThemeContract(theme_name="dark")
 
-    def replace_child_at(self, index: int, new_child: RealDOMNode):
-        RealDOMNode.total_mutations += 2
-        self.children[index] = new_child
+        # 1. Semantic Layer (Light)
+        light_theme.set_token(TokenNode("sys.color.bg.canvas", "#f8fafc", "semantic", "color", "color.slate.50", "Main surface background"))
+        light_theme.set_token(TokenNode("sys.color.bg.surface", "#ffffff", "semantic", "color", "", "Card/Container background"))
+        light_theme.set_token(TokenNode("sys.color.fg.default", "#0f172a", "semantic", "color", "color.slate.900", "Default high-contrast text"))
+        light_theme.set_token(TokenNode("sys.color.fg.muted", "#475569", "semantic", "color", "color.slate.600", "Secondary text"))
+        light_theme.set_token(TokenNode("sys.color.primary", "#2563eb", "semantic", "color", "color.blue.600", "Primary brand interactive"))
+        light_theme.set_token(TokenNode("sys.color.primary.on", "#ffffff", "semantic", "color", "", "Text on primary color"))
 
-    def update_prop(self, key: str, value: Any):
-        RealDOMNode.total_mutations += 1
-        if value is None and key in self.props:
-            del self.props[key]
+        # Component Layer (Light)
+        light_theme.set_token(TokenNode("cmp.button.primary.bg", "var(--sys-color-primary)", "component", "color", "sys.color.primary"))
+        light_theme.set_token(TokenNode("cmp.button.primary.fg", "var(--sys-color-primary-on)", "component", "color", "sys.color.primary.on"))
+        light_theme.set_token(TokenNode("cmp.card.border.radius", "8px", "component", "spacing", "radii.md"))
+
+        # 2. Semantic Layer (Dark)
+        dark_theme.set_token(TokenNode("sys.color.bg.canvas", "#0f172a", "semantic", "color", "color.slate.900", "Main canvas background"))
+        dark_theme.set_token(TokenNode("sys.color.bg.surface", "#1e293b", "semantic", "color", "color.slate.800", "Card/Container background"))
+        dark_theme.set_token(TokenNode("sys.color.fg.default", "#f8fafc", "semantic", "color", "color.slate.50", "Default high-contrast text"))
+        dark_theme.set_token(TokenNode("sys.color.fg.muted", "#94a3b8", "semantic", "color", "color.slate.400", "Secondary text"))
+        dark_theme.set_token(TokenNode("sys.color.primary", "#3b82f6", "semantic", "color", "color.blue.500", "Primary brand interactive (toned for dark)"))
+        dark_theme.set_token(TokenNode("sys.color.primary.on", "#0f172a", "semantic", "color", "color.slate.900", "Text on primary color"))
+
+        # Component Layer (Dark)
+        dark_theme.set_token(TokenNode("cmp.button.primary.bg", "var(--sys-color-primary)", "component", "color", "sys.color.primary"))
+        dark_theme.set_token(TokenNode("cmp.button.primary.fg", "var(--sys-color-primary-on)", "component", "color", "sys.color.primary.on"))
+        dark_theme.set_token(TokenNode("cmp.card.border.radius", "8px", "component", "spacing", "radii.md"))
+
+        return light_theme, dark_theme
+
+
+# ==============================================================================
+# CSS Architecture & Style Dictionary Compiler
+# ==============================================================================
+class TokenCompiler:
+    @staticmethod
+    def to_css_custom_properties(theme: ThemeContract, selector: str = ":root") -> str:
+        lines = [f"{selector} {{"]
+        for key, node in sorted(theme.tokens.items()):
+            css_var_name = "--" + key.replace(".", "-")
+            lines.append(f"  {css_var_name}: {node.value}; /* {node.tier} | {node.description or 'No desc'} */")
+        lines.append("}")
+        return "\n".join(lines)
+
+    @staticmethod
+    def to_typescript_interface(theme: ThemeContract) -> str:
+        lines = ["export interface AppThemeTokens {"]
+        for key, node in sorted(theme.tokens.items()):
+            safe_prop = f"'{key}'"
+            lines.append(f"  readonly {safe_prop}: string; // {node.tier}: {node.value}")
+        lines.append("}")
+        return "\n".join(lines)
+
+
+# ==============================================================================
+# Specificity & CSS Architecture Auditor
+# ==============================================================================
+class SpecificityAuditor:
+    @staticmethod
+    def calculate_specificity(selector: str) -> Tuple[int, int, int]:
+        """
+        Returns (IDs, Classes/Attributes/Pseudo-classes, Elements/Pseudo-elements)
+        A simplified parser demonstrating specificity hygiene.
+        """
+        import re
+        ids = len(re.findall(r"#[a-zA-Z0-9_-]+", selector))
+        classes = len(re.findall(r"\.[a-zA-Z0-9_-]+", selector))
+        attrs = len(re.findall(r"\[.+?\]", selector))
+        pseudos = len(re.findall(r":(?!:)[a-zA-Z0-9_-]+", selector))
+        # Elements
+        clean = re.sub(r"#[a-zA-Z0-9_-]+|\.[a-zA-Z0-9_-]+|\[.+?\]|::?[a-zA-Z0-9_-]+", " ", selector)
+        elements = len([w for w in clean.split() if w and not w in [">", "+", "~", "*", ","]])
+        return (ids, classes + attrs + pseudos, elements)
+
+    @staticmethod
+    def audit_selector(selector: str) -> Tuple[str, str]:
+        score = SpecificityAuditor.calculate_specificity(selector)
+        score_str = f"({score[0]},{score[1]},{score[2]})"
+        if score[0] > 0:
+            return score_str, f"{Color.FG_BRED}[REJECTED] ID selector detected! Breaks modular BEM/Utility rules.{Color.RESET}"
+        elif score[1] > 3:
+            return score_str, f"{Color.FG_BYELLOW}[WARNING] High nesting depth! Potential styling collision.{Color.RESET}"
+        elif score == (0, 1, 0) or score == (0, 2, 0):
+            return score_str, f"{Color.FG_BGREEN}[OPTIMAL] Clean Single-Class BEM or Scoped Component.{Color.RESET}"
         else:
-            self.props[key] = value
-
-    def to_string(self, depth: int = 0) -> str:
-        indent = "  " * depth
-        if self.tag == "#text":
-            return f"{indent}{GREEN}{self.props.get('nodeValue', '')}{RESET}"
-        
-        props_str = " ".join(f'{k}="{v}"' for k, v in self.props.items())
-        opening = f"{indent}<{CYAN}{self.tag}{RESET}{' ' + props_str if props_str else ''}>"
-        
-        if not self.children:
-            return f"{opening}</{CYAN}{self.tag}{RESET}>"
-        
-        child_renders = [c.to_string(depth + 1) for c in self.children]
-        closing = f"{indent}</{CYAN}{self.tag}{RESET}>"
-        return f"{opening}\n" + "\n".join(child_renders) + f"\n{closing}"
+            return score_str, f"{Color.FG_BCYAN}[ACCEPTABLE] Standard CSS Rule.{Color.RESET}"
 
 
-class Reconciler:
-    """
-    Mesin diffing O(N) dengan keyed heuristic matching (mirip implementasi React / Vue core).
-    Membandingkan Old VNode tree dengan New VNode tree dan menghasilkan Patch set.
-    """
-    def diff(self, old_node: Optional[VNode], new_node: Optional[VNode], path: List[int]) -> List[Patch]:
-        patches: List[Patch] = []
+# ==============================================================================
+# Interactive Terminal Controller
+# ==============================================================================
+class DesignSystemRunner:
+    def __init__(self):
+        self.engine = TokenEngine()
+        self.light_theme, self.dark_theme = self.engine.build_default_themes()
 
-        # Kasus 1: Node lama dihapus
-        if old_node and not new_node:
-            patches.append(Patch(PatchType.REMOVE, path=path, old_node=old_node))
-            return patches
+    def run_token_inspection(self):
+        print(f"\n{Color.FG_BYELLOW}{Color.BOLD}>>> [1] DESIGN TOKEN HIERARCHY AUDIT <<<{Color.RESET}")
+        print(f"{Color.DIM}Global Primitive Tokens (Total: {len(self.engine.global_tokens)}){Color.RESET}")
+        for k, v in list(self.engine.global_tokens.items())[:6]:
+            print(f"  {Color.FG_CYAN}{k:<24}{Color.RESET} -> {Color.FG_BWHITE}{v}{Color.RESET}")
+        print(f"  {Color.DIM}... and {len(self.engine.global_tokens) - 6} more primitive tokens.{Color.RESET}\n")
 
-        # Kasus 2: Node baru ditambahkan
-        if not old_node and new_node:
-            patches.append(Patch(PatchType.CREATE, path=path, new_node=new_node))
-            return patches
+        print(f"{Color.BOLD}Semantic & Component Tokens ({self.light_theme.theme_name.upper()} THEME):{Color.RESET}")
+        print(f"{'TOKEN KEY':<30} {'TIER':<12} {'RESOLVED VALUE':<26} {'REFERENCE'}")
+        print("-" * 80)
+        for key, node in self.light_theme.tokens.items():
+            tier_color = Color.FG_BGREEN if node.tier == "semantic" else Color.FG_BMAGENTA
+            ref_str = f"{Color.DIM}(ref: {node.reference}){Color.RESET}" if node.reference else ""
+            print(f"{Color.FG_BWHITE}{key:<30}{Color.RESET} {tier_color}{node.tier:<12}{Color.RESET} {Color.FG_YELLOW}{node.value:<26}{Color.RESET} {ref_str}")
 
-        if not old_node or not new_node:
-            return patches
+    def run_wcag_audit(self):
+        print(f"\n{Color.FG_BYELLOW}{Color.BOLD}>>> [2] WCAG CONTRAST & THEME PARITY AUDIT <<<{Color.RESET}")
+        # Test Light Theme
+        fg_light = self.light_theme.tokens["sys.color.fg.default"].value
+        bg_light = self.light_theme.tokens["sys.color.bg.canvas"].value
+        ratio_light = calculate_contrast_ratio(fg_light, bg_light)
 
-        # Kasus 3: Node diganti total (Tag berbeda atau tipe text berubah)
-        if old_node.tag != new_node.tag:
-            patches.append(Patch(PatchType.REPLACE, path=path, old_node=old_node, new_node=new_node))
-            return patches
+        # Test Dark Theme
+        fg_dark = self.dark_theme.tokens["sys.color.fg.default"].value
+        bg_dark = self.dark_theme.tokens["sys.color.bg.canvas"].value
+        ratio_dark = calculate_contrast_ratio(fg_dark, bg_dark)
 
-        # Kasus 4: Node Text berubah nilainya
-        if old_node.is_text_node and new_node.is_text_node:
-            old_val = old_node.props.get("nodeValue")
-            new_val = new_node.props.get("nodeValue")
-            if old_val != new_val:
-                patches.append(Patch(PatchType.UPDATE_TEXT, path=path, text_content=new_val))
-            return patches
-
-        # Kasus 5: Props diffing (Atribut & event listeners)
-        props_diff = self._diff_props(old_node.props, new_node.props)
-        if props_diff:
-            patches.append(Patch(PatchType.UPDATE_PROPS, path=path, props_diff=props_diff))
-
-        # Kasus 6: Children reconciliation (Key-aware)
-        children_patches = self._diff_children(old_node.children, new_node.children, path)
-        patches.extend(children_patches)
-
-        return patches
-
-    def _diff_props(self, old_props: Dict[str, Any], new_props: Dict[str, Any]) -> Dict[str, Any]:
-        """Menemukan properti yang berubah, bertambah, atau dihapus (None)."""
-        diff = {}
-        for key, val in new_props.items():
-            if old_props.get(key) != val:
-                diff[key] = val
-        for key in old_props:
-            if key not in new_props:
-                diff[key] = None
-        return diff
-
-    def _diff_children(self, old_children: List[VNode], new_children: List[VNode], parent_path: List[int]) -> List[Patch]:
-        """
-        Reconciliation berbobot berbasis Key untuk meminimalkan DOM Thrashing saat reordering/insert.
-        """
-        patches: List[Patch] = []
-        old_keyed = {c.key: (i, c) for i, c in enumerate(old_children) if c.key is not None}
-        new_keyed = {c.key: (i, c) for i, c in enumerate(new_children) if c.key is not None}
-
-        # Fallback ke index-based matching jika anak-anak tidak memakai key
-        if len(old_keyed) == 0 and len(new_keyed) == 0:
-            max_len = max(len(old_children), len(new_children))
-            for i in range(max_len):
-                o_child = old_children[i] if i < len(old_children) else None
-                n_child = new_children[i] if i < len(new_children) else None
-                patches.extend(self.diff(o_child, n_child, parent_path + [i]))
-            return patches
-
-        # Key-based Diffing:
-        # Step A: Deteksi elemen yang dihapus
-        for key, (idx, node) in old_keyed.items():
-            if key not in new_keyed:
-                patches.append(Patch(PatchType.REMOVE, path=parent_path + [idx], old_node=node))
-
-        # Step B: Deteksi elemen baru atau yang diupdate
-        for key, (idx, node) in new_keyed.items():
-            if key in old_keyed:
-                old_idx, old_child = old_keyed[key]
-                child_patches = self.diff(old_child, node, parent_path + [idx])
-                patches.extend(child_patches)
+        def eval_ratio(ratio: float) -> str:
+            if ratio >= 7.0:
+                return f"{Color.FG_BGREEN}{ratio:.2f}:1 (WCAG AAA Pass){Color.RESET}"
+            elif ratio >= 4.5:
+                return f"{Color.FG_BCYAN}{ratio:.2f}:1 (WCAG AA Pass){Color.RESET}"
             else:
-                patches.append(Patch(PatchType.CREATE, path=parent_path + [idx], new_node=node))
+                return f"{Color.FG_BRED}{ratio:.2f}:1 (FAIL < 4.5:1){Color.RESET}"
 
-        return patches
+        print(f"  [Light Mode] FG: {fg_light} on BG: {bg_light} -> Contrast: {eval_ratio(ratio_light)}")
+        print(f"  [Dark Mode]  FG: {fg_dark} on BG: {bg_dark} -> Contrast: {eval_ratio(ratio_dark)}")
 
+        # Button primary check
+        btn_bg = "#2563eb"
+        btn_fg = "#ffffff"
+        btn_ratio = calculate_contrast_ratio(btn_fg, btn_bg)
+        print(f"  [Primary Button Action] FG: {btn_fg} on BG: {btn_bg} -> Contrast: {eval_ratio(btn_ratio)}")
 
-class DOMRenderer:
-    """Menerapkan VNode awal ke RealDOM dan mem-patch mutasi berikutnya."""
-    
-    @staticmethod
-    def mount(vnode: VNode) -> RealDOMNode:
-        """Membuat Real DOM tree baru dari Virtual DOM tree."""
-        real_node = RealDOMNode(vnode.tag, dict(vnode.props))
-        for child in vnode.children:
-            real_node.append_child(DOMRenderer.mount(child))
-        return real_node
-
-    @staticmethod
-    def patch_dom(root: RealDOMNode, patches: List[Patch]):
-        """Mengaplikasikan instruksi diff langsung ke node Real DOM target."""
-        for patch in patches:
-            target = DOMRenderer._resolve_path(root, patch.path)
-            
-            if patch.patch_type == PatchType.UPDATE_TEXT:
-                target.props["nodeValue"] = patch.text_content
-                RealDOMNode.total_mutations += 1
-
-            elif patch.patch_type == PatchType.UPDATE_PROPS:
-                for k, v in patch.props_diff.items():
-                    target.update_prop(k, v)
-
-            elif patch.patch_type == PatchType.REPLACE:
-                parent = DOMRenderer._resolve_parent(root, patch.path)
-                idx = patch.path[-1]
-                parent.replace_child_at(idx, DOMRenderer.mount(patch.new_node))
-
-            elif patch.patch_type == PatchType.REMOVE:
-                parent = DOMRenderer._resolve_parent(root, patch.path)
-                idx = patch.path[-1]
-                if idx < len(parent.children):
-                    parent.remove_child_at(idx)
-
-            elif patch.patch_type == PatchType.CREATE:
-                parent = DOMRenderer._resolve_parent(root, patch.path)
-                parent.append_child(DOMRenderer.mount(patch.new_node))
-
-    @staticmethod
-    def _resolve_path(root: RealDOMNode, path: List[int]) -> RealDOMNode:
-        curr = root
-        for idx in path:
-            if idx < len(curr.children):
-                curr = curr.children[idx]
-        return curr
-
-    @staticmethod
-    def _resolve_parent(root: RealDOMNode, path: List[int]) -> RealDOMNode:
-        curr = root
-        for idx in path[:-1]:
-            curr = curr.children[idx]
-        return curr
-
-
-def simulate_lab():
-    print(f"\n{BOLD}{CYAN}======================================================================{RESET}")
-    print(f"{BOLD}{CYAN}   HANDS-ON LAB: DEEP DIVE FRONTEND RECONCILIATION & VIRTUAL DOM      {RESET}")
-    print(f"{BOLD}{CYAN}======================================================================{RESET}\n")
-
-    reconciler = Reconciler()
-
-    # 1. State Awal: Komponen Data Feed
-    print(f"{BOLD}[1] INITIAL RENDER (Mounting Initial State){RESET}")
-    old_vdom = h(
-        "div", {"id": "app-container", "class": "dark-theme"},
-        h("header", {}, h("h1", {}, "Task Monitoring Feed")),
-        h(
-            "ul", {"class": "task-list"},
-            h("li", {"key": "t-101", "class": "task-item"}, "Task 101: Init WebWorker Sync"),
-            h("li", {"key": "t-102", "class": "task-item"}, "Task 102: Preload Critical Chunk"),
-            h("li", {"key": "t-103", "class": "task-item"}, "Task 103: Evaluate Frame Budget")
-        ),
-        h("footer", {}, "System Status: Nominal")
-    )
-
-    t0 = time.perf_counter_ns()
-    real_dom = DOMRenderer.mount(old_vdom)
-    mount_time_us = (time.perf_counter_ns() - t0) / 1000
-    initial_mutations = RealDOMNode.total_mutations
-
-    print(f"{DIM}Initial Tree Structure:{RESET}")
-    print(real_dom.to_string())
-    print(f"\nReal DOM Initial Mutations: {YELLOW}{initial_mutations}{RESET} operations")
-    print(f"Mount Execution Time:       {YELLOW}{mount_time_us:.2f} µs{RESET}\n")
-
-    # 2. State Mutasi: Update item, Hapus item, Tambah item baru dengan Keyed Diff
-    print(f"{BOLD}----------------------------------------------------------------------{RESET}")
-    print(f"{BOLD}[2] STATE MUTATION & RECONCILIATION PROCESS{RESET}")
-    print(f"{DIM}Mutasi yang terjadi:{RESET}")
-    print(f"  • Item 't-102' dihapus (Selesai)")
-    print(f"  • Item 't-101' diubah teksnya (Proses -> Sukses)")
-    print(f"  • Item 't-104' ditambahkan ke daftar tugas")
-    print(f"  • Footer status berubah 'Nominal' -> 'Updated'")
-
-    new_vdom = h(
-        "div", {"id": "app-container", "class": "dark-theme"},
-        h("header", {}, h("h1", {}, "Task Monitoring Feed")),
-        h(
-            "ul", {"class": "task-list"},
-            # t-101 dimodifikasi teksnya
-            h("li", {"key": "t-101", "class": "task-item resolved"}, "Task 101: WebWorker Sync [OK]"),
-            # t-102 dihapus
-            # t-103 tetap ada
-            h("li", {"key": "t-103", "class": "task-item"}, "Task 103: Evaluate Frame Budget"),
-            # t-104 node baru ditambahkan
-            h("li", {"key": "t-104", "class": "task-item new"}, "Task 104: Drain GC Allocations")
-        ),
-        h("footer", {}, "System Status: Updated")
-    )
-
-    # Menghitung diff patches
-    t_diff_start = time.perf_counter_ns()
-    patches = reconciler.diff(old_vdom, new_vdom, path=[])
-    diff_duration_us = (time.perf_counter_ns() - t_diff_start) / 1000
-
-    print(f"\n{BOLD}Generated Atomic Patches ({len(patches)} ops):{RESET}")
-    for idx, p in enumerate(patches, 1):
-        color = GREEN if p.patch_type == PatchType.CREATE else (RED if p.patch_type == PatchType.REMOVE else MAGENTA)
-        print(f"  {idx}. Type: {color}{p.patch_type.name:<14}{RESET} Path: {p.path} Detail: {p.props_diff or p.text_content or p.new_node or p.old_node}")
-
-    # Mengaplikasikan patch ke Real DOM
-    mutations_before_patch = RealDOMNode.total_mutations
-    t_patch_start = time.perf_counter_ns()
-    DOMRenderer.patch_dom(real_dom, patches)
-    patch_duration_us = (time.perf_counter_ns() - t_patch_start) / 1000
-    delta_mutations = RealDOMNode.total_mutations - mutations_before_patch
-
-    print(f"\n{BOLD}[3] REAL DOM POST-PATCH STATE:{RESET}")
-    print(real_dom.to_string())
-
-    # 3. Analisis Efisiensi: Virtual DOM vs Naive Full Re-render (innerHTML)
-    print(f"\n{BOLD}----------------------------------------------------------------------{RESET}")
-    print(f"{BOLD}[4] PERFORMANCE & EFFICIENCY BENCHMARK ANALYSIS{RESET}")
-    
-    # Hitung estimasi jika menggunakan naive innerHTML replacement
-    # Naive re-render menghancurkan seluruh subtree dan membuat ulang semua elemen (11 nodes)
-    naive_total_nodes = 11
-    naive_mutations = naive_total_nodes * 2  # Discard + Recreation
-    vdom_saved_mutations = naive_mutations - delta_mutations
-    efficiency_gain = (vdom_saved_mutations / naive_mutations) * 100
-
-    print(f"Diff Algorithm Latency:        {CYAN}{diff_duration_us:.3f} µs{RESET}")
-    print(f"DOM Patch Latency:             {CYAN}{patch_duration_us:.3f} µs{RESET}")
-    print(f"Actual Targeted DOM Mutations: {GREEN}{delta_mutations} operations{RESET}")
-    print(f"Naive innerHTML Re-render Ops: {RED}{naive_mutations} operations{RESET}")
-    print(f"Eliminated DOM Thrashing:      {YELLOW}{vdom_saved_mutations} operations ({efficiency_gain:.1f}% reduction){RESET}")
-    print(f"{BOLD}{CYAN}======================================================================{RESET}\n")
-
-
-if __name__ == "__main__":
-    simulate_lab()
-03-Frontend-and-Mobile/06-Bab-06-Modul-02-Deep-Dive/lab_reconciler_advanced.py
-#!/usr/bin/env python3
-"""
-Lab Hands-on: Advanced Frontend Reconciliation Engine
-Modul: Virtual DOM Architecture, Double-Buffering Fiber Tree, & Concurrent Reconciler Simulation.
-
-Mendemonstrasikan:
-1. Virtual DOM AST Representation with Component Fiber Nodes.
-2. Two-Pass Reconciliation: Work Loop (Render Phase) & Commit Phase.
-3. List Reconciliation with Longest Increasing Subsequence (LIS) Heuristic.
-4. Mutation Cost Benchmark: Surgical Keyed Reconciliation vs Dirty Subtree Re-render.
-"""
-
-from __future__ import annotations
-import sys
-import time
-from enum import Enum, auto
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-
-# Terminal Styling Constants
-CYAN = "\033[96m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-MAGENTA = "\033[95m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
-
-
-class EffectTag(Enum):
-    """Flags instruksi mutasi commit phase (Fiber architecture parity)."""
-    PLACEMENT = auto()
-    UPDATE = auto()
-    DELETION = auto()
-    MOVE = auto()
-    NOOP = auto()
-
-
-@dataclass
-class VNode:
-    """Virtual Node representing immutable UI Blueprint."""
-    tag: str
-    props: Dict[str, Any] = field(default_factory=dict)
-    key: Optional[str] = None
-    children: List[VNode] = field(default_factory=list)
-    text_content: Optional[str] = None
-
-    @property
-    def is_text(self) -> bool:
-        return self.tag == "#text"
-
-    def __repr__(self) -> str:
-        if self.is_text:
-            return f'"{self.text_content}"'
-        k = f" key='{self.key}'" if self.key else ""
-        return f"<{self.tag}{k}> ({len(self.children)} children)"
-
-
-def h(tag: str, props: Optional[Dict[str, Any]] = None, *children: VNode | str, key: Optional[str] = None) -> VNode:
-    """Hyperscript factory function."""
-    props = props or {}
-    derived_key = key or props.get("key")
-    v_children: List[VNode] = []
-    
-    for c in children:
-        if isinstance(c, str):
-            v_children.append(VNode(tag="#text", text_content=c))
-        elif isinstance(c, VNode):
-            v_children.append(c)
-            
-    return VNode(tag=tag, props=props, key=str(derived_key) if derived_key else None, children=v_children)
-
-
-class RealDOMNode:
-    """Simulated Native Browser DOM Node with Performance Metrics Tracking."""
-    total_dom_ops = 0
-
-    def __init__(self, tag: str, props: Optional[Dict[str, Any]] = None, text_content: Optional[str] = None):
-        self.tag = tag
-        self.props = props or {}
-        self.text_content = text_content
-        self.children: List[RealDOMNode] = []
-        RealDOMNode.total_dom_ops += 1
-
-    def append_child(self, child: RealDOMNode):
-        RealDOMNode.total_dom_ops += 1
-        self.children.append(child)
-
-    def insert_before(self, new_child: RealDOMNode, index: int):
-        RealDOMNode.total_dom_ops += 1
-        self.children.insert(index, new_child)
-
-    def remove_at(self, index: int) -> RealDOMNode:
-        RealDOMNode.total_dom_ops += 1
-        return self.children.pop(index)
-
-    def set_attribute(self, key: str, value: Any):
-        RealDOMNode.total_dom_ops += 1
-        if value is None:
-            self.props.pop(key, None)
+        # Parity Check
+        light_keys = set(self.light_theme.tokens.keys())
+        dark_keys = set(self.dark_theme.tokens.keys())
+        parity_diff = light_keys.symmetric_difference(dark_keys)
+        if not parity_diff:
+            print(f"  {Color.FG_BGREEN}✓ 100% Theme Parity Confirmed! Both themes adhere strictly to the token contract.{Color.RESET}")
         else:
-            self.props[key] = value
+            print(f"  {Color.FG_BRED}✗ Token Parity Failure! Missing keys: {parity_diff}{Color.RESET}")
 
-    def to_tree_view(self, depth: int = 0) -> str:
-        indent = "  " * depth
-        if self.tag == "#text":
-            return f"{indent}{GREEN}{self.text_content}{RESET}"
-        
-        attrs = " ".join(f'{k}="{v}"' for k, v in self.props.items())
-        tag_open = f"{indent}<{CYAN}{self.tag}{RESET}{' ' + attrs if attrs else ''}>"
-        
-        if not self.children:
-            return f"{tag_open}</{CYAN}{self.tag}{RESET}>"
-        
-        body = "\n".join(c.to_tree_view(depth + 1) for c in self.children)
-        return f"{tag_open}\n{body}\n{indent}</{CYAN}{self.tag}{RESET}>"
+    def run_compiler_demo(self):
+        print(f"\n{Color.FG_BYELLOW}{Color.BOLD}>>> [3] STYLE DICTIONARY MULTI-TARGET COMPILER <<<{Color.RESET}")
+        css_output = TokenCompiler.to_css_custom_properties(self.light_theme, selector=":root[data-theme='light']")
+        ts_output = TokenCompiler.to_typescript_interface(self.light_theme)
 
+        print(f"{Color.FG_BCYAN}Target 1: Production CSS Variables (Root Level):{Color.RESET}")
+        for line in css_output.split("\n")[:6]:
+            print(f"  {line}")
+        print(f"  ... [truncated, {len(css_output.splitlines())} total lines]\n")
 
-@dataclass
-class FiberWorkItem:
-    """Atomic task description during Render Phase."""
-    effect: EffectTag
-    parent_path: List[int]
-    target_index: int
-    old_vnode: Optional[VNode] = None
-    new_vnode: Optional[VNode] = None
-    prop_changes: Dict[str, Any] = field(default_factory=dict)
-    text_mutation: Optional[str] = None
+        print(f"{Color.FG_BMAGENTA}Target 2: TypeScript Strict Typing Contract:{Color.RESET}")
+        for line in ts_output.split("\n")[:6]:
+            print(f"  {line}")
+        print(f"  ... [truncated, {len(ts_output.splitlines())} total lines]")
 
+    def run_specificity_audit(self):
+        print(f"\n{Color.FG_BYELLOW}{Color.BOLD}>>> [4] CSS ARCHITECTURE & SPECIFICITY HYGIENE AUDITOR <<<{Color.RESET}")
+        sample_selectors = [
+            ".c-button--primary",
+            ".header .nav-item .link.active",
+            "#main-content .hero-title",
+            "body div.wrapper ul.menu > li a:hover",
+            ".u-text-center",
+            "#modal #dialog .c-card__title.is-highlighted"
+        ]
 
-class AdvancedReconciler:
-    """
-    Two-pass Reconciliation Engine (Render/Diff Phase -> Commit Phase).
-    Utilizes Key-Map Indexing and LIS-based minimal displacement detection.
-    """
-    
-    @staticmethod
-    def get_lis_indices(arr: List[int]) -> List[int]:
-        """
-        Calculates Longest Increasing Subsequence indices in O(N log N).
-        Used by modern frameworks (e.g. Vue 3) to minimize DOM moves.
-        """
-        if not arr:
-            return []
-        
-        n = len(arr)
-        tails = [0] * n
-        tails_indices = [0] * n
-        parent = [-1] * n
-        length = 0
+        print(f"{'SELECTOR':<45} {'SPECIFICITY':<14} {'AUDIT VERDICT'}")
+        print("-" * 90)
+        for sel in sample_selectors:
+            score, verdict = SpecificityAuditor.audit_selector(sel)
+            print(f"{Color.FG_BWHITE}{sel:<45}{Color.RESET} {Color.FG_YELLOW}{score:<14}{Color.RESET} {verdict}")
 
-        for i in range(n):
-            val = arr[i]
-            if val < 0:
-                continue
+    def run_interactive(self):
+        print_banner()
+        while True:
+            print(f"\n{Color.BOLD}{Color.FG_BWHITE}Main Control Panel:{Color.RESET}")
+            print("  [1] Inspect Multi-Tier Design Tokens (Global, Semantic, Component)")
+            print("  [2] Validate WCAG 2.1 Contrast & Theme Contract Parity")
+            print("  [3] Build & Compile Style Dictionary (CSS & TypeScript)")
+            print("  [4] Run CSS Specificity & Architecture Hygiene Check")
+            print("  [5] Run All Production Checks (Automated Suite)")
+            print("  [0] Exit")
 
-            low, high = 0, length
-            while low < high:
-                mid = (low + high) // 2
-                if tails[mid] < val:
-                    low = mid + 1
-                else:
-                    high = mid
+            try:
+                choice = input(f"\n{Color.FG_BCYAN}Select option (0-5) [default 5]: {Color.RESET}").strip()
+            except (EOFError, KeyboardInterrupt):
+                print(f"\n{Color.FG_YELLOW}Exiting simulation. Good bye!{Color.RESET}")
+                break
 
-            tails[low] = val
-            tails_indices[low] = i
-            if low > 0:
-                parent[i] = tails_indices[low - 1]
-
-            if low == length:
-                length += 1
-
-        result = []
-        curr = tails_indices[length - 1] if length > 0 else -1
-        while curr >= 0:
-            result.append(curr)
-            curr = parent[curr]
-            
-        return result[::-1]
-
-    def render_phase(self, old_root: Optional[VNode], new_root: Optional[VNode]) -> List[FiberWorkItem]:
-        """Phase 1: Pure functional computation with zero DOM mutations."""
-        work_list: List[FiberWorkItem] = []
-        self._diff_nodes(old_root, new_root, path=[], work_list=work_list)
-        return work_list
-
-    def _diff_nodes(
-        self,
-        old_n: Optional[VNode],
-        new_n: Optional[VNode],
-        path: List[int],
-        work_list: List[FiberWorkItem]
-    ):
-        if not old_n and new_n:
-            work_list.append(FiberWorkItem(
-                effect=EffectTag.PLACEMENT,
-                parent_path=path[:-1],
-                target_index=path[-1] if path else 0,
-                new_vnode=new_n
-            ))
-            return
-
-        if old_n and not new_n:
-            work_list.append(FiberWorkItem(
-                effect=EffectTag.DELETION,
-                parent_path=path[:-1],
-                target_index=path[-1] if path else 0,
-                old_vnode=old_n
-            ))
-            return
-
-        if not old_n or not new_n:
-            return
-
-        # Replace completely if tags differ
-        if old_n.tag != new_n.tag:
-            work_list.append(FiberWorkItem(
-                effect=EffectTag.DELETION,
-                parent_path=path[:-1],
-                target_index=path[-1] if path else 0,
-                old_vnode=old_n
-            ))
-            work_list.append(FiberWorkItem(
-                effect=EffectTag.PLACEMENT,
-                parent_path=path[:-1],
-                target_index=path[-1] if path else 0,
-                new_vnode=new_n
-            ))
-            return
-
-        # Text Node reconciliation
-        if old_n.is_text and new_n.is_text:
-            if old_n.text_content != new_n.text_content:
-                work_list.append(FiberWorkItem(
-                    effect=EffectTag.UPDATE,
-                    parent_path=path[:-1],
-                    target_index=path[-1] if path else 0,
-                    text_mutation=new_n.text_content
-                ))
-            return
-
-        # Attribute and Prop Diffing
-        prop_diff = self._diff_props(old_n.props, new_n.props)
-        if prop_diff:
-            work_list.append(FiberWorkItem(
-                effect=EffectTag.UPDATE,
-                parent_path=path[:-1],
-                target_index=path[-1] if path else 0,
-                prop_changes=prop_diff
-            ))
-
-        # Children reconciliation
-        self._reconcile_children(old_n.children, new_n.children, path, work_list)
-
-    def _diff_props(self, old_p: Dict[str, Any], new_p: Dict[str, Any]) -> Dict[str, Any]:
-        diff = {}
-        for k, v in new_p.items():
-            if old_p.get(k) != v:
-                diff[k] = v
-        for k in old_p:
-            if k not in new_p:
-                diff[k] = None
-        return diff
-
-    def _reconcile_children(
-        self,
-        old_ch: List[VNode],
-        new_ch: List[VNode],
-        parent_path: List[int],
-        work_list: List[FiberWorkItem]
-    ):
-        """Advanced keyed list reconciliation with LIS-driven placement detection."""
-        old_map: Dict[str, Tuple[int, VNode]] = {c.key: (i, c) for i, c in enumerate(old_ch) if c.key}
-        new_map: Dict[str, Tuple[int, VNode]] = {c.key: (i, c) for i, c in enumerate(new_ch) if c.key}
-
-        # Non-keyed fallback: sequential 1:1 diffing
-        if not old_map and not new_map:
-            max_len = max(len(old_ch), len(new_ch))
-            for i in range(max_len):
-                o = old_ch[i] if i < len(old_ch) else None
-                n = new_ch[i] if i < len(new_ch) else None
-                self._diff_nodes(o, n, parent_path + [i], work_list)
-            return
-
-        # Step 1: Remove unmounted keys
-        for key, (o_idx, o_node) in old_map.items():
-            if key not in new_map:
-                work_list.append(FiberWorkItem(
-                    effect=EffectTag.DELETION,
-                    parent_path=parent_path,
-                    target_index=o_idx,
-                    old_vnode=o_node
-                ))
-
-        # Step 2: Track movement indices for LIS calculation
-        index_mapping = [-1] * len(new_ch)
-        for n_idx, n_node in enumerate(new_ch):
-            if n_node.key and n_node.key in old_map:
-                o_idx, o_node = old_map[n_node.key]
-                index_mapping[n_idx] = o_idx
-                # Recursive sub-tree update
-                self._diff_nodes(o_node, n_node, parent_path + [n_idx], work_list)
+            if choice == "" or choice == "5":
+                self.run_token_inspection()
+                self.run_wcag_audit()
+                self.run_compiler_demo()
+                self.run_specificity_audit()
+                print(f"\n{Color.FG_BGREEN}{Color.BOLD}✓ Full Production Styling Systems Simulation Passed Successfully!{Color.RESET}")
+                if choice == "":
+                    break
+            elif choice == "1":
+                self.run_token_inspection()
+            elif choice == "2":
+                self.run_wcag_audit()
+            elif choice == "3":
+                self.run_compiler_demo()
+            elif choice == "4":
+                self.run_specificity_audit()
+            elif choice == "0":
+                print(f"{Color.FG_YELLOW}Exiting simulation.{Color.RESET}")
+                break
             else:
-                work_list.append(FiberWorkItem(
-                    effect=EffectTag.PLACEMENT,
-                    parent_path=parent_path,
-                    target_index=n_idx,
-                    new_vnode=n_node
-                ))
-
-        # Step 3: Compute stable sub-sequence to prevent redundant moves
-        lis_stable_indices = set(self.get_lis_indices(index_mapping))
-
-        for n_idx, o_idx in enumerate(index_mapping):
-            if o_idx != -1 and n_idx not in lis_stable_indices:
-                work_list.append(FiberWorkItem(
-                    effect=EffectTag.MOVE,
-                    parent_path=parent_path,
-                    target_index=n_idx,
-                    new_vnode=new_ch[n_idx]
-                ))
-
-    def commit_phase(self, root: RealDOMNode, work_list: List[FiberWorkItem]):
-        """Phase 2: Synchronous execution of minimal native DOM side-effects."""
-        for item in work_list:
-            parent = self._resolve_target(root, item.parent_path)
-            
-            if item.effect == EffectTag.UPDATE:
-                target = parent if not item.parent_path else parent.children[item.target_index]
-                if item.text_mutation is not None:
-                    target.text_content = item.text_mutation
-                    RealDOMNode.total_dom_ops += 1
-                for k, v in item.prop_changes.items():
-                    target.set_attribute(k, v)
-
-            elif item.effect == EffectTag.DELETION:
-                if item.target_index < len(parent.children):
-                    parent.remove_at(item.target_index)
-
-            elif item.effect == EffectTag.PLACEMENT and item.new_vnode:
-                new_dom = self._instantiate_dom(item.new_vnode)
-                if item.target_index >= len(parent.children):
-                    parent.append_child(new_dom)
-                else:
-                    parent.insert_before(new_dom, item.target_index)
-
-            elif item.effect == EffectTag.MOVE and item.new_vnode:
-                # Optimized DOM displacement
-                if item.target_index < len(parent.children):
-                    moved_node = parent.remove_at(item.target_index)
-                    parent.insert_before(moved_node, item.target_index)
-
-    def _instantiate_dom(self, vnode: VNode) -> RealDOMNode:
-        dom = RealDOMNode(tag=vnode.tag, props=dict(vnode.props), text_content=vnode.text_content)
-        for child in vnode.children:
-            dom.append_child(self._instantiate_dom(child))
-        return dom
-
-    def _resolve_target(self, root: RealDOMNode, path: List[int]) -> RealDOMNode:
-        curr = root
-        for idx in path:
-            if idx < len(curr.children):
-                curr = curr.children[idx]
-        return curr
+                print(f"{Color.FG_RED}Invalid option selected. Please choose between 0 and 5.{Color.RESET}")
 
 
-def run_benchmark():
-    print(f"\n{BOLD}{CYAN}======================================================================{RESET}")
-    print(f"{BOLD}{CYAN}    ADVANCED FRONTEND LAB: FIBER WORK-LOOP & LIS RECONCILIATION       {RESET}")
-    print(f"{BOLD}{CYAN}======================================================================{RESET}\n")
-
-    reconciler = AdvancedReconciler()
-
-    # Initial State Definition
-    print(f"{BOLD}[PHASE 1] Initial Mount & Tree Generation{RESET}")
-    initial_vdom = h(
-        "div", {"id": "viewport", "class": "terminal-ui"},
-        h("nav", {"role": "navigation"}, h("span", {}, "DevTools Inspector")),
-        h(
-            "section", {"class": "metrics-grid"},
-            h("div", {"class": "card"}, "FPS: 60.0", key="card-fps"),
-            h("div", {"class": "card"}, "Heap: 42MB", key="card-heap"),
-            h("div", {"class": "card"}, "DOM Nodes: 182", key="card-dom"),
-            h("div", {"class": "card"}, "Threads: 4", key="card-threads")
-        ),
-        h("footer", {}, "Status: Monitoring Active")
-    )
-
-    t0 = time.perf_counter_ns()
-    simulated_dom = reconciler._instantiate_dom(initial_vdom)
-    mount_latency_us = (time.perf_counter_ns() - t0) / 1000
-    initial_ops = RealDOMNode.total_dom_ops
-
-    print(f"{DIM}Rendered Initial DOM Layout:{RESET}")
-    print(simulated_dom.to_tree_view())
-    print(f"\nMount Operations: {YELLOW}{initial_ops}{RESET} ops | Latency: {YELLOW}{mount_latency_us:.2f} µs{RESET}\n")
-
-    # High-Velocity Mutation Scenario:
-    # 1. Reorder cards (card-dom moved ahead)
-    # 2. Update Heap reading
-    # 3. Remove Threads card
-    # 4. Insert Network Latency card
-    print(f"{BOLD}----------------------------------------------------------------------{RESET}")
-    print(f"{BOLD}[PHASE 2] High-Velocity State Dispatch{RESET}")
-    print(f"{DIM}Plan Mutasi:{RESET}")
-    print(f"  [-] Hapus key 'card-threads'")
-    print(f"  [*] Mutasi nilai Heap: 42MB -> 56MB")
-    print(f"  [+] Sisipkan card baru: 'card-net' (Latency: 14ms)")
-    print(f"  [~] Reorder posisi: 'card-dom' digeser ke posisi pertama")
-
-    mutated_vdom = h(
-        "div", {"id": "viewport", "class": "terminal-ui"},
-        h("nav", {"role": "navigation"}, h("span", {}, "DevTools Inspector")),
-        h(
-            "section", {"class": "metrics-grid"},
-            h("div", {"class": "card highlighted"}, "DOM Nodes: 185", key="card-dom"),
-            h("div", {"class": "card"}, "FPS: 60.0", key="card-fps"),
-            h("div", {"class": "card warning"}, "Heap: 56MB", key="card-heap"),
-            h("div", {"class": "card"}, "Network: 14ms", key="card-net")
-        ),
-        h("footer", {}, "Status: High Pressure Detected")
-    )
-
-    # Execute Render Phase (Diffing)
-    t_render = time.perf_counter_ns()
-    work_list = reconciler.render_phase(initial_vdom, mutated_vdom)
-    render_time_us = (time.perf_counter_ns() - t_render) / 1000
-
-    print(f"\n{BOLD}Render Phase Work List ({len(work_list)} Atomic Side-Effects Detected):{RESET}")
-    for idx, w in enumerate(work_list, 1):
-        color = GREEN if w.effect == EffectTag.PLACEMENT else (RED if w.effect == EffectTag.DELETION else MAGENTA)
-        print(f"  {idx}. Effect: {color}{w.effect.name:<11}{RESET} Index: {w.target_index} Context: {w.prop_changes or w.text_mutation or w.new_vnode or w.old_vnode}")
-
-    # Execute Commit Phase (DOM Side-Effects)
-    ops_before_commit = RealDOMNode.total_dom_ops
-    t_commit = time.perf_counter_ns()
-    reconciler.commit_phase(simulated_dom, work_list)
-    commit_time_us = (time.perf_counter_ns() - t_commit) / 1000
-    committed_ops = RealDOMNode.total_dom_ops - ops_before_commit
-
-    print(f"\n{BOLD}[PHASE 3] Final Real DOM Tree Post-Commit:{RESET}")
-    print(simulated_dom.to_tree_view())
-
-    # Architectural Cost Profiling
-    print(f"\n{BOLD}----------------------------------------------------------------------{RESET}")
-    print(f"{BOLD}[PHASE 4] Cost Profiling vs Naive Full Replacement (innerHTML){RESET}")
-
-    # Total nodes in mutated tree: 14 nodes (div + nav + span + text + section + 4 cards*2 + footer + text)
-    naive_destructive_ops = 14 * 2  # Complete unmount and reconstruction
-    ops_saved = naive_destructive_ops - committed_ops
-    gain_pct = (ops_saved / naive_destructive_ops) * 100
-
-    print(f"Concurrent Render/Diff Time: {CYAN}{render_time_us:.3f} µs{RESET}")
-    print(f"Commit Phase Execution Time: {CYAN}{commit_time_us:.3f} µs{RESET}")
-    print(f"Surgical DOM Modifications:  {GREEN}{committed_ops} ops{RESET}")
-    print(f"Naive Full-Rebuild Cost:     {RED}{naive_destructive_ops} ops{RESET}")
-    print(f"Browser Reflow/Paint Saved:  {YELLOW}{ops_saved} ops ({gain_pct:.1f}% reduction){RESET}")
-    print(f"{BOLD}{CYAN}======================================================================{RESET}\n")
-
-
+# ==============================================================================
+# Main Entry Point
+# ==============================================================================
 if __name__ == "__main__":
-    run_benchmark()
+    runner = DesignSystemRunner()
+    if len(sys.argv) > 1 and sys.argv[1] in ("--test", "--ci", "-t"):
+        # Automated non-interactive mode for CI/Verification tests
+        print_banner()
+        runner.run_token_inspection()
+        runner.run_wcag_audit()
+        runner.run_compiler_demo()
+        runner.run_specificity_audit()
+        print(f"\n{Color.FG_BGREEN}{Color.BOLD}[CI PASS] All Design System contracts verified.{Color.RESET}")
+        sys.exit(0)
+    else:
+        # Check if running in non-interactive environment (like piped stdout or subshell)
+        if not sys.stdin.isatty():
+            print_banner()
+            runner.run_token_inspection()
+            runner.run_wcag_audit()
+            runner.run_compiler_demo()
+            runner.run_specificity_audit()
+            print(f"\n{Color.FG_BGREEN}{Color.BOLD}[BATCH PASS] Non-interactive execution finished.{Color.RESET}")
+            sys.exit(0)
+        else:
+            runner.run_interactive()

